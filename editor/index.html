@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Laniakea Wavetable Editor</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>Laniakea <span>wavetable editor</span></h1>
+    <div class="conn">
+      <span id="conn-status" class="pill off">disconnected</span>
+      <button id="btn-connect">Connect</button>
+      <button id="btn-upload" class="primary" disabled>Upload to module</button>
+      <button id="btn-factory" disabled>Restore factory waves</button>
+    </div>
+  </header>
+
+  <div id="progress" hidden><div id="progress-bar"></div></div>
+
+  <main>
+    <section class="panel bank">
+      <div class="panel-head">
+        <h2>Bank <small>8 × 8 — X = SHAPE, Y = SHAPE in ORBITS menu</small></h2>
+        <div class="tools">
+          <label class="btn">Load bank .wav<input id="file-bank" type="file" accept=".wav" hidden></label>
+          <label class="btn" title="Single-cycle WAVs (AKWF, Serum/Vital single cycles...) are placed from the selected slot onwards">Import single cycles<input id="file-cycles" type="file" accept=".wav" multiple hidden></label>
+          <button id="btn-export">Export .wav</button>
+          <select id="preset-bank" title="Generate a complete bank">
+            <option value="">New bank…</option>
+            <option value="classic">Classic shapes morph</option>
+            <option value="pwm">Pulse width sweep</option>
+            <option value="harm">Harmonic series build-up</option>
+            <option value="fm">FM ratio × index</option>
+            <option value="sync">Hard sync sweep</option>
+            <option value="formant">Formant / vowel</option>
+            <option value="fold">Wavefolder sine → chaos</option>
+          </select>
+        </div>
+      </div>
+      <div id="grid" class="grid" tabindex="0"></div>
+      <p class="hint">Click to select, Shift+click to select a range. Drop .wav files onto a cell (single cycle) or onto the grid (bank). Ctrl+C / Ctrl+V copy-paste waves, Ctrl+Z / Ctrl+Y undo-redo.</p>
+      <div class="tools">
+        <button id="btn-fill-row" title="Interpolate between the first and last wave of the selected row">Interpolate row</button>
+        <button id="btn-fill-col" title="Interpolate between the first and last wave of the selected column">Interpolate column</button>
+        <button id="btn-fill-sel" title="Interpolate across the selected range">Interpolate selection</button>
+        <button id="btn-norm-all">Normalize all</button>
+      </div>
+    </section>
+
+    <section class="panel wave">
+      <div class="panel-head">
+        <h2>Wave <span id="wave-label">1</span></h2>
+        <div class="tools">
+          <select id="gen-type">
+            <option value="sine">Sine</option><option value="triangle">Triangle</option><option value="saw">Saw</option>
+            <option value="square">Square</option><option value="pulse">Pulse</option><option value="fm">FM</option>
+            <option value="sync">Sync</option><option value="formant">Formant</option><option value="noise">Noise</option>
+          </select>
+          <input id="gen-param" type="range" min="0" max="1" step="0.01" value="0.5" title="Generator parameter">
+          <button id="btn-gen">Generate</button>
+        </div>
+      </div>
+      <canvas id="wave-canvas" width="800" height="300" title="Draw with the mouse"></canvas>
+      <div class="tools">
+        <button data-op="normalize">Normalize</button>
+        <button data-op="invert">Invert</button>
+        <button data-op="reverse">Reverse</button>
+        <button data-op="smooth">Smooth</button>
+        <button data-op="fold">Fold</button>
+        <button data-op="clip">Saturate</button>
+        <button data-op="shift">Phase +90°</button>
+        <button data-op="bandlimit">Band-limit (as module)</button>
+      </div>
+      <h3>Harmonics <small>click/drag bars to edit — resynthesizes the wave</small></h3>
+      <canvas id="harm-canvas" width="800" height="120"></canvas>
+    </section>
+
+    <section class="panel morph">
+      <div class="panel-head"><h2>Morph preview <small>bilinear X/Y like the module</small></h2></div>
+      <div class="morph-body">
+        <canvas id="xy-pad" width="240" height="240" title="Drag to move X/Y"></canvas>
+        <div class="morph-controls">
+          <canvas id="morph-canvas" width="400" height="140"></canvas>
+          <label>X <input id="mx" type="range" min="0" max="7" step="0.001" value="0"><output id="mx-o">0.00</output></label>
+          <label>Y <input id="my" type="range" min="0" max="7" step="0.001" value="0"><output id="my-o">0.00</output></label>
+          <div class="lfo">
+            <label><input id="lfo-x-on" type="checkbox"> LFO → X</label>
+            <input id="lfo-x-rate" type="range" min="0.02" max="4" step="0.01" value="0.2" title="X LFO rate (Hz)">
+            <label title="Preview of the shape-cv-xy / shape-cv-y firmware patches: an LFO into SHAPE CV scanning rows"><input id="lfo-y-on" type="checkbox"> LFO → Y</label>
+            <input id="lfo-y-rate" type="range" min="0.02" max="4" step="0.01" value="0.13" title="Y LFO rate (Hz)">
+          </div>
+          <div class="tools">
+            <button id="btn-play">▶ Play</button>
+            <label>Pitch <input id="pitch" type="range" min="24" max="84" step="1" value="45"><output id="pitch-o">A2</output></label>
+            <label>Vol <input id="vol" type="range" min="0" max="1" step="0.01" value="0.3"></label>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel log">
+      <div class="panel-head">
+        <h2>Module</h2>
+        <div class="tools">
+          <label title="Magerit's web page drops every other sample (aliasing). Band-limited resampling is cleaner.">
+            256→128: <select id="resample"><option value="bl">band-limited</option><option value="dec">decimate (Magerit)</option></select>
+          </label>
+        </div>
+      </div>
+      <pre id="log"></pre>
+    </section>
+  </main>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,40 @@
+# ---------------------------------------------------------------------------
+# Copyrighted third-party material: NEVER commit. Everything here can be
+# re-downloaded or regenerated with the commands in README.md.
+# ---------------------------------------------------------------------------
+
+# Magerit firmware: official releases, patched builds and personal flash dumps
+#   official:  .\laniakea fetch            (or downloaded automatically by patcher.py build)
+#   custom:    tools\patcher.py build ...
+#   backup:    .\laniakea backup            (contains YOUR calibration; keep it safe, but not in git)
+firmware/
+
+# Magerit manuals (PDF + extracted text):  .\laniakea fetch --manuals
+docs/manuals/
+
+# Reverse-engineering material derived from Magerit's code
+#   Ghidra project, decompiled C, disassembly, string dumps:  scripts\ghidra_analyze.ps1
+re/ghidra/
+re/strings/
+#   Magerit web updater JS / desktop app downloads (see docs/RE-NOTES.md for URLs)
+re/webupdater/
+re/desktop-app/
+
+# Downloaded / generated wavetables (AKWF is CC0, but regenerable and bulky)
+#   .\laniakea akwf fetch <folders>  ;  .\laniakea bank <dirs> -o wavetables\banks\x.wav
+wavetables/
+
+# ---------------------------------------------------------------------------
+# Local toolchains (scripts\setup.ps1 + scripts\install_re_tools.py)
+# ---------------------------------------------------------------------------
+.venv/
+tools/jdk/
+tools/ghidra/
+tools/xtensa-esp-elf/
+tools/.downloads/
+tools/install.log
+
+# misc
+tests/_*
+__pycache__/
+*.pyc
