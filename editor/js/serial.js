@@ -39,6 +39,7 @@ export class LaniakeaSerial {
     this.queue = [];
     this.pending = null;
     this.rxTail = [];
+    this.lineResets = 0;   // stream restarts since the last command (line held low = ESP32 not running)
     this.log = log;
     this.onText = null; // console output callback
   }
@@ -74,6 +75,7 @@ export class LaniakeaSerial {
 
   async write(data) {
     this.rxTail = [];
+    this.lineResets = 0;
     const w = this.port.writable.getWriter();
     try { await w.write(typeof data === 'string' ? new TextEncoder().encode(data) : data); }
     finally { w.releaseLock(); }
@@ -115,13 +117,17 @@ export class LaniakeaSerial {
     await sleep(30);
     if (!this.port?.readable) return false;            // closed / unplugged
     try { this.reader = this.port.readable.getReader(); } catch { return false; }
-    this.log(`(serial stream restarted${err?.message ? `: ${err.message}` : ''})`);
+    if (this.lineResets++ === 0 && err?.message) this.log(`(serial: ${err.message})`);
     return true;
   }
 
   /** What arrived since the last command, for error messages. */
   rxNote() {
-    if (!this.rxTail.length) return ' (nothing received)';
+    if (!this.rxTail.length) {
+      return this.lineResets > 3
+        ? ' (nothing received, and the serial line is held low: the ESP32 is not running. Is the rack power on? USB alone only powers the USB chip)'
+        : ' (nothing received)';
+    }
     const s = this.rxTail.map((b) => (b >= 32 && b < 127 ? String.fromCharCode(b) : `\\x${b.toString(16).padStart(2, '0')}`)).join('');
     return ` (received: "${s}")`;
   }
