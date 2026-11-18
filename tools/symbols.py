@@ -24,7 +24,8 @@ V3_6 = {
     },
 
     # ---- RAM globals (float unless noted)
-    "settings": 0x3FFC80C0,            # +0x44 tabla, +0x48 acorde, +0x4c cant_esp(volume), +0x50 octava ...
+    "space_amounts": 0x3FFC35D0,       # SPACE-menu amounts val_1..val_7: FREQ, ORBITS, COLOR, SHAPE, SPACE!, EFFECTS, CLUSTER
+    "settings": 0x3FFC80C0,           # +0x44 tabla, +0x48 acorde, +0x4c cant_esp(volume), +0x50 octava ...
     "cv": {                            # normalised CV input values written by the ADC task
         "shape": 0x3FFC357C, "cluster": 0x3FFC3580, "color": 0x3FFC358C,
         "orbits": 0x3FFC3578, "space": 0x3FFC3584, "effects": 0x3FFC3588,

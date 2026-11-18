@@ -27,6 +27,7 @@ $P = ".venv\Scripts\python.exe tools\patcher.py"      # Linux/macOS: .venv/bin/p
 & $P build led_dedupe                                 # only the crackle fix (stock Y behaviour)
 & $P build cv_to_y:source=effects led_dedupe chords:set=pro
 & $P build cv_to_y:source=space,gain=-0.78 led_dedupe
+& $P build recommended quantizer                      # + scale quantizer
 ```
 
 Images go to `firmware/custom/`. Flash one of three ways:
@@ -101,6 +102,50 @@ unison:      0 -0.12 0.08 12 -0.1 0.1 24 12.05     <- 8 numbers = exact voicing 
 Short chords are voiced over the 8 voices automatically, like Magerit's own: root, slightly
 flat doubled root (for thin chords), the other tones, then the same an octave up. Up to 16 lines;
 missing lines repeat the last chord.
+
+## Feature: scale quantizer (`quantizer`)
+
+The total pitch (FREQ knob + V/OCT) snaps to a scale. Turning FREQ steps through the scale,
+so small bumps stay in key, and V/OCT sequences land in key. Pitches are absolute (A = 440 Hz),
+so the key is a real musical key.
+
+**Setting it up** (everything is saved automatically):
+
+1. Press **SPACE!** (button) to enter the SPACE menu.
+2. Turn **FREQ** to pick the **scale**.
+3. Turn the **SPACE!** knob to pick the **root / key**.
+4. Press **SPACE!** again to leave.
+
+| FREQ in SPACE menu (travel) | Scale |   | SPACE! in SPACE menu (travel) | Root |
+| --- | --- | --- | --- | --- |
+| 0–8 % (fully CCW) | **off** (stock behaviour) | | 0–8 % | C |
+| 8–17 % | chromatic | | 8–17 % | C# |
+| 17–25 % | major | | 17–25 % | D |
+| 25–33 % | natural minor | | 25–33 % | D# |
+| 33–42 % | harmonic minor | | 33–42 % | E |
+| 42–50 % | major pentatonic | | 42–50 % | F |
+| 50–58 % | minor pentatonic | | 50–58 % | F# |
+| 58–67 % | dorian | | 58–67 % | G |
+| 67–75 % | mixolydian | | 67–75 % | G# |
+| 75–83 % | spanish (phrygian dominant) | | 75–83 % | A |
+| 83–92 % | blues | | 83–92 % | A# |
+| 92–100 % | whole tone | | 92–100 % | B |
+
+Notes:
+
+- **SPACE! no longer bends pitch**: the SPACE-menu FREQ slot now selects the scale. The SPACE-menu
+  SPACE! slot was unused by the stock firmware and is now the root.
+- **After a factory reset**, SPACE-menu FREQ defaults to 75 % (spanish). Turn it fully
+  counter-clockwise to switch the quantizer off.
+- **Hysteresis:** 0.12 semitone keeps CV noise from flickering between notes (`hyst=` option).
+- **Your own scale list:** `quantizer:scales=major,minor,dorian,blues` (up to 15; zone 1 is
+  always off). Available scales: chromatic, major, minor, harmonic_minor, melodic_minor,
+  major_pentatonic, minor_pentatonic, dorian, phrygian, lydian, mixolydian, locrian, spanish,
+  blues, whole_tone, iwato, hirajoshi, fourths, fifths, octaves. Fewer scales give wider zones.
+- **Chords** (CLUSTER voices) are built on top of the quantized root note, so pick chords that
+  fit the scale.
+
+Build: `patcher.py build recommended quantizer`.
 
 ## Fix: menu crackle (`led_dedupe`)
 

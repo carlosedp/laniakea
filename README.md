@@ -77,6 +77,7 @@ $P = ".venv\Scripts\python.exe tools\patcher.py"
 & $P build cv_to_y:source=effects chords:set=pro led_dedupe
 & $P build cv_to_y:source=shape,gain=-0.78            # SHAPE CV scans rows (inverted)
 & $P build chords:set=my_chords.txt                   # your own 16 chords
+& $P build recommended quantizer                      # + scale quantizer
 ```
 
 | Patch | What it does |
@@ -84,6 +85,7 @@ $P = ".venv\Scripts\python.exe tools\patcher.py"
 | `cv_to_y` | route a CV jack (`source=effects/space/orbits/...`) to the wavetable Y axis |
 | `led_dedupe` | **fix**: refresh the LED ring only when it changes (removes the v3.4+ menu crackle) |
 | `chords` | replace the 16 ORBITS-menu chords (Laniakea Pro set, or your own file) |
+| `quantizer` | scale quantizer: SPACE-menu FREQ = scale, SPACE-menu SPACE! = root; FREQ snaps to the scale |
 | `quiet` | silence serial logging |
 | `diag_guards`, `diag_noled` | diagnostics used to find the crackle (see RE notes) |
 | `_template` | starting point for your own patch |
