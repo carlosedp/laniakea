@@ -11,7 +11,7 @@ Note: `laniakea monitor` will show (almost) nothing with this patch.
 
 DESCRIPTION = "Silence serial logging (diagnostic for the v3.4+ menu clacking)"
 OPTIONS = {"level": (0, "log level: 0 none, 1 error, 2 warn, 3 info (stock)")}
-TARGETS = ["3.6"]
+TARGETS = ["3.6", "3.7"]
 
 
 def apply(fw, level):

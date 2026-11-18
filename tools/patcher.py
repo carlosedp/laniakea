@@ -2,7 +2,7 @@
 
   patcher.py list                                    available patches and their options
   patcher.py build PATCH[:opt=val,...] [PATCH...]    apply patches in order -> firmware/custom/
-            [--base v3.6] [-o out.bin]
+            [--base v3.7] [-o out.bin]
   patcher.py disasm ADDR [--bytes N]                 disassemble the official image around ADDR
   patcher.py find TEXT                               search strings -> functions (Ghidra export)
   patcher.py verify FILE.bin                         checksum / SHA-256 / app info
@@ -158,7 +158,7 @@ def main(argv=None, prog=None):
     ap = argparse.ArgumentParser(prog=prog, description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
     sub.add_parser("list").set_defaults(fn=cmd_list)
-    b = sub.add_parser("build"); b.add_argument("patches", nargs="+"); b.add_argument("--base", default="v3.6")
+    b = sub.add_parser("build"); b.add_argument("patches", nargs="+"); b.add_argument("--base", default="v3.7")
     b.add_argument("-o", "--output"); b.set_defaults(fn=cmd_build)
     d = sub.add_parser("disasm"); d.add_argument("addr"); d.add_argument("--bytes", type=int, default=32)
     d.add_argument("--before", type=int, default=0); d.add_argument("--base", default="v3.6"); d.set_defaults(fn=cmd_disasm)

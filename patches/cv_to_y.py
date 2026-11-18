@@ -19,7 +19,7 @@ OPTIONS = {
     "exclusive": (True, "remove the CV from its original knob (repurpose the jack)"),
     "gain": (0.0, "CV depth; 0 = auto (same rows/volt as X columns); negative inverts"),
 }
-TARGETS = ["3.6"]
+TARGETS = ["3.6", "3.7"]
 
 
 def apply(fw, source, exclusive, gain):

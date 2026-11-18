@@ -23,8 +23,8 @@ powershell -ExecutionPolicy Bypass -File scripts\setup.ps1      # 1. Python venv
 .venv\Scripts\python.exe scripts\install_re_tools.py --only xtensa
                                                                # 2. Xtensa assembler, needed to build patches
 .\laniakea backup                                               # 3. FULL flash dump incl. your calibration (keep it!)
-.\laniakea patcher build recommended                          # 4. download official v3.6 + apply patches
-.\laniakea flash "firmware\custom\laniakea_v3.6+usab+Y-effects+leddedupe.bin"   # 5. flash it (calibration is kept)
+.\laniakea patcher build recommended                          # 4. download official v3.7 + apply patches
+.\laniakea flash "firmware\custom\laniakea_v3.7+usab+Y-effects+leddedupe.bin"   # 5. flash it (calibration is kept)
 ```
 
 **Linux / macOS** (sh):
@@ -33,8 +33,8 @@ powershell -ExecutionPolicy Bypass -File scripts\setup.ps1      # 1. Python venv
 sh scripts/setup.sh                                   # 1. venv (uses uv, python3-venv, or downloads a local uv)
 .venv/bin/python scripts/install_re_tools.py --only xtensa   # 2. Xtensa assembler for your OS/CPU
 ./laniakea.sh backup                                  # 3. full flash dump (keep it!)
-./laniakea.sh patcher build recommended               # 4. download official v3.6 + apply patches
-./laniakea.sh flash "firmware/custom/laniakea_v3.6+usab+Y-effects+leddedupe.bin"   # 5. flash it
+./laniakea.sh patcher build recommended               # 4. download official v3.7 + apply patches
+./laniakea.sh flash "firmware/custom/laniakea_v3.7+usab+Y-effects+leddedupe.bin"   # 5. flash it
 ```
 
 - **Linux:** add yourself to the serial group once and log in again: `sudo usermod -aG dialout $USER` (Arch/Fedora: `uucp`). On Ubuntu, `brltty` can grab CH340 adapters (`sudo apt remove brltty`).
@@ -44,7 +44,8 @@ sh scripts/setup.sh                                   # 1. venv (uses uv, python
 
 `recommended` = **usability fixes** (sane factory-reset defaults, wider wavetable rows, 12-semitone
 FREQ ranges) + **EFFECTS CV jack → wavetable Y (row)** + the **fix for the v3.4+ menu
-crackle**. To undo: `laniakea flash v3.6` (official), or `laniakea restore <backup> --yes`.
+crackle**. Builds start from Magerit's v3.7 (add `--base v3.6` for the older one).
+To undo: `laniakea flash v3.7` (official), or `laniakea restore <backup> --yes`.
 
 ## Everyday use
 
@@ -62,7 +63,7 @@ The examples use the Windows form. Everything, including `patcher`, works the sa
 .\laniakea version               # installed firmware version + patches (read-only)
 .\laniakea settings              # saved ORBITS/SPACE settings + calibration (read-only; or: settings <dump.bin>)
 .\laniakea fetch [--manuals]     # all official firmware versions (+ Magerit's PDF manuals)
-.\laniakea flash v3.6            # official firmware, downloaded if needed (keeps calibration/NVS)
+.\laniakea flash v3.7            # official firmware, downloaded if needed (keeps calibration/NVS)
 .\laniakea flash <file.bin>      # a patched build
 .\laniakea restore <dump> --yes  # put an exact flash dump back
 .\laniakea editor                # wavetable editor + firmware updater at http://127.0.0.1:8765 (any browser)
@@ -71,7 +72,7 @@ The examples use the Windows form. Everything, including `patcher`, works the sa
 .\laniakea waves current   |   .\laniakea waves read -o mine.wav   # module's bank / read it back (banks patch)
 .\laniakea akwf fetch fmsynth eorgan   # AKWF single cycles (CC0) -> wavetables\akwf\
 .\laniakea bank wavetables\akwf\AKWF_fmsynth -o wavetables\banks\fm.wav
-.\laniakea factory-waves         # export the firmware's factory wavetable -> wavetables\banks\factory_v3.6.wav
+.\laniakea factory-waves         # export the firmware's factory wavetable -> wavetables\banks\factory.wav
 .\laniakea monitor [--reset]     # serial console
 ```
 

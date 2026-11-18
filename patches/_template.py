@@ -15,7 +15,7 @@ OPTIONS = {
     # name: (default, help).  The default's type is used to parse "name=value" on the command line.
     "amount": (0.5, "multiplier applied to the SHAPE CV"),
 }
-TARGETS = ["3.6"]
+TARGETS = ["3.6", "3.7"]
 
 
 def apply(fw, amount):

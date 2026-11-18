@@ -28,13 +28,12 @@ OPTIONS = {
     "y_top": (0.88, "ORBITS-menu SHAPE position of the last row (stock ~0.78; must be < 0.94)"),
     "freq_semis": (12.0, "FREQ span in fixed-octave ranges (stock 7; 0 = keep)"),
 }
-TARGETS = ["3.6"]
+TARGETS = ["3.6", "3.7"]
 ORDER = 10          # before cv_to_y, which reads fw.meta["y_scale"]
 
-SPACE_DEFAULT_STORES = 0x400E4AC6  # 15 bytes: 7x s32i a8, a2, 0..24 (a8 = 0.75, a2 = 0x3ffc35d0)
-SPACE_DEFAULT_RESUME = 0x400E4AD5  # call8 nvs_open ("storage") - a10..a12 are its args: don't touch
-Y_SCALE_LOAD = 0x400DD1FF         # l32r a8, =9.0   (voice renderer: row = Y * 9)
-FREQ_SPAN_LOAD = 0x400E2F2B       # l32r a10, =7.0  (mixer: (oct-1)*12 + FREQ*7 + 12)
+# Sites (tools/symbols.py): space_default_stores = 7x s32i a8, a2, 0..24 (a8 = 0.75, a2 = SPACE
+# amounts), ending at call8 nvs_open whose args a10..a12 must not be touched; y_scale_load =
+# l32r a8, =9.0 (renderer: row = Y * 9); freq_span_load = l32r a10, =7.0 (mixer FREQ span).
 
 
 def _reload(fw, addr, reg, value, name):
@@ -49,6 +48,7 @@ def apply(fw, space_default, space_default_freq, y_top, freq_semis):
     for v in (space_default, space_default_freq):
         if not 0 <= v <= 100:
             raise ValueError("SPACE defaults are percentages (0..100)")
+    SPACE_DEFAULT_STORES, SPACE_DEFAULT_RESUME = fw.sym["space_default_stores"]
     n = SPACE_DEFAULT_RESUME - SPACE_DEFAULT_STORES
     insns = [t for _a, _h, t in fw.disasm(SPACE_DEFAULT_STORES, n)]
     if len(insns) != 7 or not all(t.startswith("s32i") and "a8, a2" in t for t in insns):
@@ -72,8 +72,8 @@ def apply(fw, space_default, space_default_freq, y_top, freq_semis):
         if not 0.5 <= y_top < 0.94:
             raise ValueError("y_top must be between 0.5 and 0.94 (additive starts at 0.94/0.95)")
         k = 7.0 / y_top
-        _reload(fw, Y_SCALE_LOAD, "a8", k, "y_scale")
+        _reload(fw, fw.sym["y_scale_load"][0], fw.sym["y_scale_load"][1], k, "y_scale")
         fw.meta["y_scale"] = k
     if freq_semis:
-        _reload(fw, FREQ_SPAN_LOAD, "a10", freq_semis, "freq_span")
+        _reload(fw, fw.sym["freq_span_load"][0], fw.sym["freq_span_load"][1], freq_semis, "freq_span")
     fw.tag("usab")

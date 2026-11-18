@@ -745,14 +745,15 @@ $('btn-upload-all').addEventListener('click', () => {
 async function loadFactoryIntoEditor() {
   const { officialReleases, downloadOfficial } = await flasherModule();
   const { extractFactoryBank } = await import('./fwimage.js');
-  const rel = (await officialReleases()).find((r) => r.version === 'v3.6');
-  if (!rel) throw new Error('official v3.6 not found in Magerit\'s manifest');
+  const releases = await officialReleases();
+  const rel = releases.find((r) => r.version === 'v3.7') || releases.find((r) => r.version === 'v3.6');
+  if (!rel) throw new Error('official v3.7/v3.6 not found in Magerit\'s manifest');
   const factory = await extractFactoryBank(await downloadOfficial(rel, log));
   pushUndo();
   waves = factory.map((w) => dsp.resampleCycle(Float32Array.from(w, (v) => v / 32767), LEN));
   lastLoadedName = 'Factory waves (edited)';
   changed();
-  log('Factory waves loaded into the editor (from the official v3.6 firmware).');
+  log(`Factory waves loaded into the editor (from the official ${rel.version} firmware).`);
 }
 $('btn-factory-bank').addEventListener('click', () => busy(async () => { await loadFactoryIntoEditor(); newContent(); }));
 

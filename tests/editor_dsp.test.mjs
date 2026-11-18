@@ -84,6 +84,13 @@ import { extractFactoryBank } from '../editor/js/fwimage.js';
     assert.ok(peak > 30000 && peak <= 32767, `factory peak ${peak}`);
     console.log(`  factory bank extracted: 64 x 128, peak ${peak}`);
   }
+  const p37 = new URL('official/laniakea/laniakea_v3.7.bin', fwDir);
+  if (existsSync(p) && existsSync(p37)) {
+    const a = await extractFactoryBank(new Uint8Array(readFileSync(p)));
+    const b = await extractFactoryBank(new Uint8Array(readFileSync(p37)));
+    assert.ok(a.every((w, i) => w.every((v, k) => v === b[i][k])), 'v3.7 factory bank = v3.6');
+    console.log('  v3.7 factory bank extracted, identical to v3.6');
+  }
   const other = new URL('official/laniakea/laniakea_v3.3.bin', fwDir);
   if (existsSync(other)) await assert.rejects(extractFactoryBank(new Uint8Array(readFileSync(other))), /unknown firmware version/);
 }

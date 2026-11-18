@@ -7,7 +7,7 @@ USB-serial bridge, not the ESP32.
   python tools/laniakea.py fetch [--pro]             download official firmware (+ verify sha256)
   python tools/laniakea.py info                      chip / flash / MAC / eFuse summary (read-only)
   python tools/laniakea.py backup                    full 4 MB flash dump -> firmware/backup/
-  python tools/laniakea.py flash v3.6 | FILE.bin     flash a merged image at 0x0 (keeps NVS/calibration)
+  python tools/laniakea.py flash v3.7 | FILE.bin     flash a merged image at 0x0 (keeps NVS/calibration)
   python tools/laniakea.py restore BACKUP.bin        write a full flash dump back (incl. NVS)
   python tools/laniakea.py waves upload FILE.wav     upload a 64x256 wavetable (WaveEdit format)
   python tools/laniakea.py waves default             restore the factory wavetable
@@ -263,7 +263,7 @@ def cmd_version(a):
         print("patches: " + ", ".join(version.split("+")[1:]))
     else:
         official = {"Jun 12 2023": "v2.2", "Mar  5 2024": "v2.8", "Oct 29 2025": "v3.0", "May  4 2026": "v3.1-v3.3",
-                    "Aug 18 2026": "v3.4-v3.6"}
+                    "Aug 18 2026": "v3.4-v3.6", "Nov 18 2026": "v3.7"}
         print(f"official Magerit firmware ({official.get(cstr(96, 112), 'unknown')}; exact version: compare a backup "
               "with `laniakea fetch` images)")
 
@@ -748,8 +748,8 @@ def main():
     p.add_argument("sources", nargs="+", help="1 source = whole grid; 2-8 = one per row")
     p.add_argument("-o", "--output", required=True); p.set_defaults(fn=cmd_bank)
     p = sub.add_parser("factory-waves", help="export the firmware's built-in factory wavetable as a .wav")
-    p.add_argument("-o", "--output", default=str(WAVETABLES / "banks" / "factory_v3.6.wav"))
-    p.add_argument("--version", default="v3.6"); p.set_defaults(fn=cmd_factory_waves)
+    p.add_argument("-o", "--output", default=str(WAVETABLES / "banks" / "factory.wav"))
+    p.add_argument("--version", default="v3.7"); p.set_defaults(fn=cmd_factory_waves)
     # add_help=False + REMAINDER: everything after `patcher` (incl. -h) goes to the patcher CLI
     p = sub.add_parser("patcher", add_help=False, help="list/build firmware patches (same as tools/patcher.py)")
     p.add_argument("args", nargs=argparse.REMAINDER); p.set_defaults(fn=cmd_patcher)

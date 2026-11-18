@@ -59,13 +59,14 @@ export async function inspectFirmware(bytes) {
 // Factory wavetable inside official images: int32[8 rows][1024] (64 waves x 128 samples, low 16 bits).
 const FACTORY_TABLE = {
   '64f8ee24f19ee6085594ccb9a6d7697e7f90b7d325b4615a65651ff8a452e328': 0x3f4119fc,   // v3.6
+  '936f9fd502e5e350cc23982bee64c8b6cfeb5dbd3efcbf4dd76fca5585de1b2d': 0x3f4119fc,   // v3.7 (same table)
 };
 
 /** Extract the factory bank from an official image -> Array(64) of Int16Array(128). */
 export async function extractFactoryBank(bytes) {
   const b = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
   const addr = FACTORY_TABLE[await sha256Hex(b)];
-  if (!addr) throw new Error('unknown firmware version (factory table address only known for v3.6)');
+  if (!addr) throw new Error('unknown firmware version (factory table address known for v3.6 and v3.7)');
   const app = parseImage(b, APP_OFFSET);
   const seg = app.segments.find((s) => addr >= s.addr && addr + 64 * 128 * 4 <= s.addr + s.len);
   if (!seg) throw new Error('factory table not inside the image');

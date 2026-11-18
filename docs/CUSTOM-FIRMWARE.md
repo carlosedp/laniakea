@@ -1,7 +1,9 @@
 # Custom firmware: features, building and flashing
 
-A custom build is the **official Magerit v3.6** with a set of patches applied. Nothing
-else changes: same sound engine, and your calibration and settings are kept when flashing.
+A custom build is the **official Magerit v3.7** (the default; v3.6 with `--base v3.6`) with a
+set of patches applied. Nothing else changes: same sound engine, and your calibration and
+settings are kept when flashing. v3.7 is Magerit's fix for the additive oscillator (the
+clacking in additive mode and the noise when leaving it); every patch works on both.
 
 ## Which patches are in my build?
 
@@ -9,7 +11,7 @@ The patches are chosen when you **build**. Each build is a complete firmware ima
 the image name and version string list its patches:
 
 ```text
-laniakea_v3.6+usab+Y-effects+leddedupe.bin      version "3.6+usab+Y-effects+leddedupe"
+laniakea_v3.7+usab+Y-effects+leddedupe.bin      version "3.7+usab+Y-effects+leddedupe"
 ```
 
 To see what the module runs: `laniakea version` (read-only), or the `App version:` line of
@@ -36,7 +38,7 @@ Images go to `firmware/custom/`. Flash one of three ways:
 | --- | --- |
 | CLI | `.\laniakea flash "firmware\custom\<file>.bin"`  (Linux/macOS: `./laniakea.sh flash …`) |
 | Wavetable editor | `.\laniakea editor` → **Firmware** panel → *Custom .bin…* → *Flash firmware* |
-| Back to official | `.\laniakea flash v3.6`, the editor's *Official release* list, or Magerit's web updater |
+| Back to official | `.\laniakea flash v3.7`, the editor's *Official release* list, or Magerit's web updater |
 
 Before the first custom flash, run `laniakea backup` (or *Backup flash…* in the editor).
 `laniakea restore <dump> --yes` puts the exact old state back, including calibration.
@@ -226,7 +228,9 @@ Examples: `usability:space_default=10` (gentler SPACE!), `usability:space_defaul
 Firmware v3.4–v3.6 crackles while a menu is open, worst with ORBITS-menu SHAPE fully
 clockwise. The menu display re-sends identical data to the LED ring every 8 ms, and the
 transmissions leak into the audio. The patch only refreshes the ring when a pixel changes.
-The ring looks the same and the crackle is gone. It's in `recommended`; see
+The ring looks the same and the crackle is gone. It's in `recommended`. v3.7 fixes the
+additive-mode clacking in the engine; `led_dedupe` still applies there and only removes
+redundant LED transmissions. See
 [RE-NOTES](RE-NOTES.md#v33--v34-changes-menu-clacking-regression) for the investigation.
 
 ## Other patches

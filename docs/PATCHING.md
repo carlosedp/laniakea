@@ -50,7 +50,7 @@ Copy [patches/_template.py](../patches/_template.py) to `patches/my_patch.py`:
 ```python
 DESCRIPTION = "What it does"
 OPTIONS = {"amount": (0.5, "help text")}     # default value's type = parser type
-TARGETS = ["3.6"]
+TARGETS = ["3.6", "3.7"]
 
 def apply(fw, amount):
     addr, orig, _ = fw.sym["cv_add"]["shape"]          # add.s f6, f6, f5
@@ -99,7 +99,7 @@ The [Xtensa ISA reference](https://www.cadence.com/content/dam/cadence-www/globa
 ### 5. Test safely
 1. `.\laniakea backup` (once), then `laniakea patcher build …` and `.\laniakea flash <file>`.
 2. Check the boot log: `.\laniakea monitor --reset`. A crash prints `Guru Meditation Error` with a PC address; disassemble around it.
-3. Something wrong? `.\laniakea flash v3.6` (keeps your calibration) or `.\laniakea restore <backup> --yes`.
+3. Something wrong? `.\laniakea flash v3.7` (keeps your calibration) or `.\laniakea restore <backup> --yes`.
 
 The ESP32 ROM bootloader can't be overwritten, so a bad patch can always be reflashed over USB.
 

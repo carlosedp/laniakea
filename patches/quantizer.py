@@ -23,7 +23,7 @@ OPTIONS = {
                "comma list (max 15) of scales for zones 2..; zone 1 is always 'off'"),
     "hyst": (0.12, "hysteresis in semitones"),
 }
-TARGETS = ["3.6"]
+TARGETS = ["3.6", "3.7"]
 
 LIBRARY = {
     "chromatic": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
@@ -49,8 +49,8 @@ LIBRARY = {
 }
 
 STATE = 0x50001F80            # [0] last output (float), [4] magic
-HOOK = 0x400E2F7C             # add.s f0, f2, f3   ; f0 = total pitch (V/OCT + FREQ note)
-SPACE_ON_FREQ = 0x400E2F57    # msub.s f3, f2, f1  ; note -= SPACE amount * note
+# hook sites (tools/symbols.py): pitch_sum = add.s f0, f2, f3 (total pitch: V/OCT + FREQ note),
+# freq_space_msub = msub.s f3, f2, f1 (note -= SPACE amount * note)
 
 
 def nearest_table(degrees):
@@ -72,6 +72,7 @@ def apply(fw, scales, hyst):
     table_addr = fw.add_code(name="quant_table", body="    .word " + ",".join(map(str, table)) + "\n")
 
     # 1) SPACE no longer scales the FREQ note: msub.s f3,f2,f1 -> mov.s f3,f1
+    HOOK, SPACE_ON_FREQ = fw.sym["pitch_sum"], fw.sym["freq_space_msub"]
     fw.replace(SPACE_ON_FREQ, "    mov.s   f3, f1\n", expect=fw.read(SPACE_ON_FREQ, 3))
 
     # 2) quantize the total pitch. Free here: a8 a9 a11 a12 a13 a15, f1-f6. Live: f0 (result), f7, a14.

@@ -136,6 +136,33 @@ Results on hardware (2026-11-17):
 - `led_dedupe` on hardware: **ring works normally and the crackle is gone** → fix confirmed.
   Recommended daily build: `laniakea_v3.6+Y-effects+leddedupe.bin`.
 
+## v3.6 → v3.7 (additive oscillator fix) and porting the patches
+
+Magerit's v3.7 ("improved additive oscillator", 2026-11-18) fixes the additive-mode clacking
+and the noise when leaving additive mode. The changes are in the voice engine (FUN_400de65c
+and its helpers). The LED code is unchanged, so the fix is in the engine. Rodata grew by ~1 KB,
+`.flash.text` by ~5 KB, and `.data`/`.bss` moved, so nearly every address changed. The factory
+wavetable, the chord table and the `onda_%d` key stay at the same addresses.
+
+`re/port_syms.py OLD.bin NEW.bin` ports `tools/symbols.py`. It aligns normalised instruction
+streams (95 % of 67k instructions matched), maps code addresses through the alignment, and maps
+data addresses through the literals that aligned `l32r`s load. Fixed by hand for v3.7:
+
+- `space_load`, `space_save`: function entries, taken from their call sites.
+- `led_refresh_fn`: the linear disassembly is out of step there.
+- `y_scale_load`: the renderer function is byte-identical; found through its 9.0 literal.
+- `unused_rodata`: string search.
+
+The additive thresholds (0.94 renderer, 0.95 mixer) are unchanged, so `usability`'s Y spread
+still fits.
+
+Checks:
+
+- Every v3.6 build is byte-identical after moving the patches' hard-coded addresses into
+  `symbols.py`.
+- The same patch set built on v3.6 and v3.7 gives code caves of identical size. Their 42
+  differing words are all mapped literals or jumps back to the mapped hook sites.
+
 ## Reference material (not in git)
 
 Magerit's web-updater code, which documents the flashing and wave-upload protocols, can be

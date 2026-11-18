@@ -5,9 +5,9 @@ Diagnosis (docs/RE-NOTES.md): the crackle disappears when LED refreshes are disa
 same data; each RMT transmission couples into the audio path.
 
 This patch keeps a shadow copy of the 8 pixel colours:
-  - led_strip_set_pixel wrapper (0x400e58a8): compares the new colour with the shadow;
+  - led_strip_set_pixel wrapper (v3.6: 0x400e58a8): compares the new colour with the shadow;
     if different, stores it and sets a "dirty" flag. The real set_pixel is always called.
-  - led_strip_refresh wrapper   (0x400e58e0): transmits only if dirty, then clears it.
+  - led_strip_refresh wrapper   (v3.6: 0x400e58e0): transmits only if dirty, then clears it.
 The ring looks exactly the same, but a static display sends nothing.
 
 State lives in RTC slow memory (0x50001F40..0x50001F67): 8 shadow words, dirty, magic.
@@ -16,17 +16,17 @@ On first use after power-up the shadow is invalidated so every pixel is sent onc
 
 DESCRIPTION = "Fix menu crackle: refresh the LED ring only when pixels change"
 OPTIONS = {}
-TARGETS = ["3.6"]
+TARGETS = ["3.6", "3.7"]
 
 BASE = 0x50001F40           # [0..28] shadow (0x00RRGGBB), [32] dirty, [36] magic
-SET_PIXEL_BODY = 0x400E58AB  # after `entry a1, 48` of led_strip_set_pixel wrapper
-REFRESH_BODY = 0x400E58E3    # after `entry a1, 48` of led_strip_refresh wrapper
 
 
 def apply(fw):
-    for a in (0x400E58A8, 0x400E58E0):
+    for a in (fw.sym["led_set_pixel_fn"], fw.sym["led_refresh_fn"]):
         if not fw.disasm(a, 3)[0][2].startswith("entry"):
             raise ValueError(f"unexpected code at {a:#x}")
+    SET_PIXEL_BODY = fw.sym["led_set_pixel_fn"] + 3   # after `entry a1, 48`
+    REFRESH_BODY = fw.sym["led_refresh_fn"] + 3
 
     # --- set_pixel(strip=a2, index=a3, r=a4, g=a5, b=a6)
     fw.hook(SET_PIXEL_BODY, expect=fw.read(SET_PIXEL_BODY, 4), name="led_set_pixel",
