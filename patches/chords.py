@@ -39,7 +39,13 @@ def voices(tones):
     stack = sorted({x + 12 * k for x in t for k in range(4)})
     if len(t) <= 3:
         stack = [0, DETUNE] + [s for s in stack if s != 0]
-    return stack[:8]
+    v = stack[:8]
+    base = list(v)
+    i = 0
+    while len(v) < 8:              # few distinct notes (e.g. octaves): double them, slightly detuned
+        v.append(base[1 + i % (len(base) - 1)] + 0.05 * (1 + i // (len(base) - 1)))
+        i += 1
+    return v
 
 
 def parse_file(path):

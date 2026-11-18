@@ -47,3 +47,28 @@ assert.equal(mod.length, 64); assert.ok(mod.every((w) => w.length === 128 && w.e
 assert.deepEqual(Array.from(dsp.morph(bank, 3, 5)), Array.from(bank[5 * 8 + 3]));
 writeFileSync(new URL('./_pwm_bank_module.json', import.meta.url), JSON.stringify(mod));
 console.log('editor dsp/wav tests: OK');
+
+// ---- firmware updater helpers (fwimage.js)
+import { md5, inspectFirmware, sha256Hex } from '../editor/js/fwimage.js';
+import { createHash } from 'node:crypto';
+import { existsSync, readFileSync } from 'node:fs';
+for (const n of [0, 1, 55, 56, 63, 64, 65, 1000, 100003]) {
+  const data = Uint8Array.from({ length: n }, (_, i) => (i * 7 + 3) & 255);
+  assert.equal(md5(data), createHash('md5').update(data).digest('hex'), `md5 len ${n}`);
+}
+const fwDir = new URL('../firmware/', import.meta.url);
+for (const rel of ['official/laniakea/laniakea_v3.6.bin', 'custom/laniakea_v3.6+Y-effects+leddedupe.bin']) {
+  const p = new URL(rel, fwDir);
+  if (!existsSync(p)) { console.log(`  (skip ${rel}: not built/downloaded)`); continue; }
+  const bytes = new Uint8Array(readFileSync(p));
+  const info = await inspectFirmware(bytes);
+  assert.equal(info.project, 'Magerit_LANIAKEA');
+  assert.equal(md5(bytes), createHash('md5').update(bytes).digest('hex'));
+  assert.equal(await sha256Hex(bytes), createHash('sha256').update(bytes).digest('hex'));
+  const bad = bytes.slice(); bad[0x20000] ^= 0xff;
+  await assert.rejects(inspectFirmware(bad), /checksum|SHA-256/);
+  console.log(`  ${rel}: version "${info.version}" OK, corruption detected`);
+}
+const pro = new URL('official/laniakea_pro/laniakea_pro_v1.0.bin', fwDir);
+if (existsSync(pro)) await assert.rejects(inspectFirmware(new Uint8Array(readFileSync(pro))), /ESP32/);
+console.log('firmware helper tests: OK');

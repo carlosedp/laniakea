@@ -226,6 +226,30 @@ def cmd_backup(a):
     (out.with_suffix(".sha256")).write_text(hashlib.sha256(buf).hexdigest() + "  " + out.name + "\n")
 
 
+def cmd_version(a):
+    """Show which firmware (and which patches) the module runs: reads only the app header."""
+    import tempfile
+    port = find_port(a.port)
+    with tempfile.TemporaryDirectory() as td:
+        out = Path(td) / "hdr.bin"
+        esptool("read-flash", hex(espimage.APP_OFFSET), "0x200", str(out), port=port)
+        hdr = out.read_bytes()
+    d = 24 + 8                                   # esp_app_desc_t at the first segment's data
+    import struct
+    if struct.unpack_from("<I", hdr, d)[0] != 0xABCD5432:
+        die("no application descriptor found - is Laniakea firmware installed?")
+    cstr = lambda a_, b_: hdr[d + a_:d + b_].split(b"\0")[0].decode(errors="replace")
+    version, built = cstr(16, 48), f"{cstr(96, 112)} {cstr(80, 96)}"
+    print(f"\nproject: {cstr(48, 80)}\nversion: {version}\nbuilt:   {built}")
+    if "+" in version:
+        print("patches: " + ", ".join(version.split("+")[1:]))
+    else:
+        official = {"Jun 12 2023": "v2.2", "Mar  5 2024": "v2.8", "Oct 29 2025": "v3.0", "May  4 2026": "v3.1-v3.3",
+                    "Aug 18 2026": "v3.4-v3.6"}
+        print(f"official Magerit firmware ({official.get(cstr(96, 112), 'unknown')}; exact version: compare a backup "
+              "with `laniakea fetch` images)")
+
+
 def cmd_settings(a):
     """Read the NVS partition (read-only) and print saved settings / calibration."""
     import nvs
@@ -562,6 +586,7 @@ def main():
     p.set_defaults(fn=cmd_fetch)
     sub.add_parser("info").set_defaults(fn=cmd_info)
     p = sub.add_parser("backup"); p.add_argument("-o", "--output"); p.set_defaults(fn=cmd_backup)
+    sub.add_parser("version", help="show installed firmware version and patches (read-only)").set_defaults(fn=cmd_version)
     p = sub.add_parser("settings", help="print saved settings/calibration from NVS (read-only)")
     p.add_argument("file", nargs="?", help="read from a flash dump instead of the module"); p.set_defaults(fn=cmd_settings)
     p = sub.add_parser("flash"); p.add_argument("image", help="version (v3.6) or path to merged .bin")

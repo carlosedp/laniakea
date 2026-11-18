@@ -22,7 +22,7 @@
   <main>
     <section class="panel bank">
       <div class="panel-head">
-        <h2>Bank <small>8 × 8 — X = SHAPE, Y = SHAPE in ORBITS menu</small></h2>
+        <h2>Bank <small>8 × 8 — X = SHAPE (+CV), Y = SHAPE in ORBITS menu (+EFFECTS CV with the cv_to_y patch)</small></h2>
         <div class="tools">
           <label class="btn">Load bank .wav<input id="file-bank" type="file" accept=".wav" hidden></label>
           <label class="btn" title="Single-cycle WAVs (AKWF, Serum/Vital single cycles...) are placed from the selected slot onwards">Import single cycles<input id="file-cycles" type="file" accept=".wav" multiple hidden></label>
@@ -110,6 +110,23 @@
         </div>
       </div>
       <pre id="log"></pre>
+    </section>
+
+    <section class="panel firmware">
+      <div class="panel-head">
+        <h2>Firmware <small>flash official or custom builds. Calibration and settings are kept</small></h2>
+      </div>
+      <div class="tools">
+        <select id="fw-source"><option value="">Loading official versions…</option></select>
+        <label class="btn" title="A build from tools/patcher.py (firmware/custom/*.bin)">Custom .bin…<input id="fw-file" type="file" accept=".bin" hidden></label>
+      </div>
+      <p id="fw-info" class="hint">No firmware selected.</p>
+      <div class="tools">
+        <button id="btn-backup" title="Download a full 4 MB flash dump (includes your calibration)">Backup flash…</button>
+        <button id="btn-flash" class="primary" disabled>Flash firmware</button>
+      </div>
+      <p class="hint">Back up once before flashing anything. The module must be powered from the rack.
+        Custom builds come from <code>tools/patcher.py build …</code> (see docs/PATCHING.md).</p>
     </section>
   </main>
 

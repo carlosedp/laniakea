@@ -18,8 +18,15 @@ export class LaniakeaSerial {
 
   static supported() { return 'serial' in navigator; }
 
-  async connect() {
-    this.port = await navigator.serial.requestPort({ filters: FILTERS });
+  /** Close the port and hand the SerialPort object to someone else (e.g. the firmware flasher). */
+  async release() {
+    const p = this.port;
+    await this.disconnect();
+    return p;
+  }
+
+  async connect(port = null) {
+    this.port = port || await navigator.serial.requestPort({ filters: FILTERS });
     await this.port.open({ baudRate: 115200 });
     // Do not hold the chip in reset / bootloader.
     await this.port.setSignals({ dataTerminalReady: false, requestToSend: false });

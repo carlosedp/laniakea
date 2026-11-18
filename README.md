@@ -53,12 +53,13 @@ local venv. The examples use the Windows form:
 .\laniakea ports                 # find the module (CH340)
 .\laniakea info                  # chip, flash, eFuses (read-only)
 .\laniakea backup                # full 4 MB dump -> firmware\backup\  (do this before flashing anything)
+.\laniakea version               # installed firmware version + patches (read-only)
 .\laniakea settings              # saved ORBITS/SPACE settings + calibration (read-only; or: settings <dump.bin>)
 .\laniakea fetch [--manuals]     # all official firmware versions (+ Magerit's PDF manuals)
 .\laniakea flash v3.6            # official firmware, downloaded if needed (keeps calibration/NVS)
 .\laniakea flash <file.bin>      # a patched build
 .\laniakea restore <dump> --yes  # put an exact flash dump back
-.\laniakea editor                # wavetable editor at http://127.0.0.1:8765 (Chrome/Edge)
+.\laniakea editor                # wavetable editor + firmware updater at http://127.0.0.1:8765 (Chrome/Edge)
 .\laniakea waves upload <bank.wav>   |   .\laniakea waves default
 .\laniakea akwf fetch fmsynth eorgan   # AKWF single cycles (CC0) -> wavetables\akwf\
 .\laniakea bank wavetables\akwf\AKWF_fmsynth -o wavetables\banks\fm.wav
@@ -93,6 +94,7 @@ Output goes to `firmware\custom\`. How patches work and how to write one:
 ## Docs
 
 - [docs/MANUAL.md](docs/MANUAL.md): how the module really works (from the firmware): init patch, troubleshooting, all ORBITS/SPACE functions, additive oscillator and resonator
+- [docs/CUSTOM-FIRMWARE.md](docs/CUSTOM-FIRMWARE.md): the custom features (Y-axis CV, chord sets, crackle fix), enabling/disabling patches, building and flashing (CLI or editor)
 - [docs/PATCHING.md](docs/PATCHING.md): how patches work, how to write one
 - [docs/PRO-FEATURES.md](docs/PRO-FEATURES.md): which Laniakea Pro features can be ported
 - [docs/WAVETABLES.md](docs/WAVETABLES.md): formats, AKWF, upload protocol

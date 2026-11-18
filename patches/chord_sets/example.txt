@@ -1,0 +1,21 @@
+# Example chord set for:  tools/patcher.py build chords:set=patches/chord_sets/example.txt
+# One chord per line (up to 16, in knob order). Numbers = semitones above the root.
+#   short lists (2-7 notes) are voiced automatically over 8 voices, lowest first;
+#   exactly 8 numbers are used verbatim (fractions = detune, e.g. -0.12).
+# CLUSTER right of 12 o'clock adds voices in order, so the first notes matter most.
+unison:      0 -0.12 0.08 12 -0.1 0.1 24 12.05
+octaves:     0 12
+fifths:      0 7
+fourths:     0 5
+sus2:        0 2 7
+sus4:        0 5 7
+major:       0 4 7
+major 7:     0 4 7 11
+dominant 7:  0 4 7 10
+add9:        0 4 7 14
+minor:       0 3 7
+minor 7:     0 3 7 10
+minor 9:     0 3 7 10 14
+quartal:     0 5 10 15
+so what:     0 5 10 15 19
+open fifths: 0 7 14 21

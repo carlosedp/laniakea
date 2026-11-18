@@ -330,8 +330,9 @@ function refreshMorph() {
 xyPad.addEventListener('pointerdown', (e) => { xyPad.setPointerCapture(e.pointerId); padMove(e); xyPad.onpointermove = padMove; });
 xyPad.addEventListener('pointerup', () => { xyPad.onpointermove = null; });
 function padMove(e) {
-  const r = xyPad.getBoundingClientRect(), step = r.width / COLS;
-  setXY((e.clientX - r.left - step / 2) / step, (e.clientY - r.top - step / 2) / step);
+  // Map each axis with its own cell size: the canvas can be scaled non-uniformly by CSS.
+  const r = xyPad.getBoundingClientRect(), sx = r.width / COLS, sy = r.height / COLS;
+  setXY((e.clientX - r.left - sx / 2) / sx, (e.clientY - r.top - sy / 2) / sy);
 }
 $('mx').addEventListener('input', (e) => setXY(Number(e.target.value), my));
 $('my').addEventListener('input', (e) => setXY(mx, Number(e.target.value)));
@@ -390,10 +391,75 @@ $('btn-connect').addEventListener('click', async () => {
   } catch (err) { log(`Connect failed: ${err.message}`); }
 });
 async function busy(fn) {
-  $('btn-upload').disabled = $('btn-factory').disabled = $('btn-connect').disabled = true;
+  const ids = ['btn-upload', 'btn-factory', 'btn-connect', 'btn-flash', 'btn-backup'];
+  ids.forEach((id) => { $(id).disabled = true; });
   try { await fn(); } catch (err) { log(`Error: ${err.message}`); }
-  finally { progress(null); $('btn-connect').disabled = false; setConnected(serial.connected); }
+  finally {
+    progress(null);
+    $('btn-connect').disabled = false; $('btn-backup').disabled = false;
+    $('btn-flash').disabled = !fwBytes;
+    setConnected(serial.connected);
+  }
 }
+
+// ------------------------------------------------------------------ firmware updater
+// esptool-js comes from a CDN, so the flasher is loaded lazily: the editor works offline.
+let fwBytes = null, fwReleases = [];
+const flasherModule = () => import('./flasher.js');
+async function showFirmware(bytes, label) {
+  const { inspectFirmware } = await flasherModule();
+  try {
+    const info = await inspectFirmware(bytes);
+    fwBytes = bytes;
+    $('fw-info').textContent = `${label}: ${info.project} version "${info.version}", built ${info.date} ${info.time}, ${bytes.length} bytes, checksums OK`;
+  } catch (err) {
+    fwBytes = null;
+    $('fw-info').textContent = `${label}: rejected: ${err.message}`;
+  }
+  $('btn-flash').disabled = !fwBytes || !LaniakeaSerial.supported();
+}
+async function loadReleases() {
+  try {
+    const { officialReleases } = await flasherModule();
+    fwReleases = await officialReleases();
+    $('fw-source').innerHTML = '<option value="">Official release…</option>' +
+      fwReleases.map((r, i) => `<option value="${i}">Official ${r.version} (${r.date})</option>`).join('');
+  } catch (err) {
+    $('fw-source').innerHTML = '<option value="">Official releases unavailable (offline?)</option>';
+  }
+}
+$('fw-source').addEventListener('change', (e) => busy(async () => {
+  if (e.target.value === '') return;
+  const rel = fwReleases[Number(e.target.value)];
+  const { downloadOfficial } = await flasherModule();
+  await showFirmware(await downloadOfficial(rel, log), `Official ${rel.version}`);
+}));
+$('fw-file').addEventListener('change', async (e) => {
+  const f = e.target.files[0]; e.target.value = '';
+  if (!f) return;
+  $('fw-source').value = '';
+  await showFirmware(new Uint8Array(await f.arrayBuffer()), f.name);
+});
+async function takePort() { return serial.connected ? serial.release() : null; }
+$('btn-flash').addEventListener('click', () => {
+  if (!fwBytes) return;
+  if (!confirm(`Flash this firmware?\n\n${$('fw-info').textContent}\n\nCalibration and settings are kept. Keep the module powered and don't unplug USB until it's done.`)) return;
+  busy(async () => {
+    const { flashFirmware } = await flasherModule();
+    progress(0);
+    await flashFirmware({ port: await takePort(), bytes: fwBytes, log, onProgress: progress });
+    log('Click Connect again to upload waves.');
+  });
+});
+$('btn-backup').addEventListener('click', () => busy(async () => {
+  const { backupFlash } = await flasherModule();
+  progress(0);
+  const { data } = await backupFlash({ port: await takePort(), log, onProgress: progress });
+  const stamp = new Date().toISOString().replace(/[:T]/g, '-').slice(0, 19);
+  const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(new Blob([data])), download: `laniakea_backup_${stamp}.bin` });
+  a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  log(`Backup saved (${data.length} bytes). Keep it safe: it contains your calibration.`);
+}));
 $('btn-upload').addEventListener('click', () => busy(async () => {
   const data = dsp.toModuleFormat(waves, { decimate: $('resample').value === 'dec' });
   progress(0);
@@ -413,8 +479,10 @@ waves = load() || PRESETS.classic();
 refreshAll();
 setXY(0, 0);
 requestAnimationFrame(lfoLoop);
+loadReleases();
 if (!LaniakeaSerial.supported()) {
   $('btn-connect').disabled = true;
+  $('btn-backup').disabled = true;
   log('Web Serial is not available in this browser - use Chrome or Edge to upload to the module. Editing and export still work.');
 } else {
   log('Ready. Power the module from the rack, connect USB, then click Connect.');
