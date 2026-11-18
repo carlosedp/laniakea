@@ -97,6 +97,10 @@ V3_6 = {
     "motor_jack_load": 0x400df049,      # l8ui a8, a8, 1 : audio task reads it (0 = LPG held open)
     "exciter_jack_flag": 0x3ffc3529,    # byte: 1 = cable in EXCITER (jack detection, every 24 samples)
     "pitch_out": 0x3ffc80dc,            # float: final pitch / 108 (semitones, after the quantizer)
+    # ---- string model set-up (FUN_400e258c in v3.6): bow excitation (bow patch)
+    "string_inv_density_store": 0x400e25d8,  # s32i.n a10, a2, 16 ; wfr f0, a8 : stores 1/d (bow impulse scale);
+                                       #   d = ORBITS^2 (impulse density), ORBITS itself saved at a1+12
+    "string_bow_gain_site": 0x400e25e6,      # wfr f6, a6 : f7 = 8 - 6d (bow gain), a7 = bow flag (pluck: f7 *= EXCITER)
 
     # ---- ESP-IDF logging (initialised .data): esp_log default level, 3 = INFO
     "log_level": (0x3FFB0054, "03000000"),
@@ -193,6 +197,10 @@ V3_7 = {   # ported from 3.6 by re/port_syms.py, checked by hand (docs/RE-NOTES.
     "motor_jack_load": 0x400df6f6,      # l8ui a8, a8, 1 : audio task reads it (0 = LPG held open)
     "exciter_jack_flag": 0x3ffc6181,    # byte: 1 = cable in EXCITER (jack detection, every 24 samples)
     "pitch_out": 0x3ffcad34,            # float: final pitch / 108 (semitones, after the quantizer)
+    # ---- string model set-up (FUN_400e258c in v3.6): bow excitation (bow patch)
+    "string_inv_density_store": 0x400e2db8,  # s32i.n a10, a2, 16 ; wfr f0, a8 : stores 1/d (bow impulse scale);
+                                       #   d = ORBITS^2 (impulse density), ORBITS itself saved at a1+12
+    "string_bow_gain_site": 0x400e2dc6,      # wfr f6, a6 : f7 = 8 - 6d (bow gain), a7 = bow flag (pluck: f7 *= EXCITER)
 
     # ---- ESP-IDF logging (initialised .data): esp_log default level, 3 = INFO
     "log_level": (0x3FFB0054, "03000000"),

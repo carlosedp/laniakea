@@ -314,6 +314,21 @@ Build: `laniakea patcher build recommended quantizer strum`. Options: `mode` (`p
 default 0.8: higher = brighter, like a louder trigger), `gate_ms` (internal trigger length,
 default 10), `hyst` (semitones of hysteresis, default 0.3).
 
+## Fix: harsh bow noise (`bow`)
+
+In bow mode (ORBITS-menu EFFECTS ≤ 50 %) the string model is bowed all the time, even with no
+cable, by noise impulses whose density is set by the ORBITS knob; each impulse is scaled by
+1/density, so low ORBITS gives rare, very loud cracks. The string also runs much louder than the
+oscillator, so as soon as SHAPE brings it in (right of ~2 o'clock) a hard, grainy noise takes
+over, even with ORBITS low.
+
+- `level` (default 0.3, stock 1.0): bow excitation level.
+- `even` (default on): the bow has the same energy at every ORBITS position, so low ORBITS is a
+  fine grain instead of cracks.
+
+Pluck is unchanged. Build: `laniakea patcher build recommended bow` (try `bow:level=0.15` or
+`bow:level=0.5` to taste).
+
 ## Other patches
 
 | Patch                       | Use                                                                  |

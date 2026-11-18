@@ -176,6 +176,11 @@ Results on hardware (2026-11-17):
   S = clamp((SHAPE − 0.7)·4) (0x3ffc37c0). So the string, and bow/pluck, are only heard with
   the effective SHAPE above 0.7.
 - Final pitch: settings + 0x1c (0x3ffc80dc in v3.6) = semitones / 108, after the quantizer hook.
+- Bow excitation (FUN_400e258c): density d = ORBITS²·0.99995 + 5e-5 (+0x0c), impulse scale
+  1/d (+0x10), gain 8 − 6d (+0x14; pluck: × EXCITER level). The audio task emits an impulse when
+  a random number < d, so energy ∝ (8 − 6d)²/d: largest at low ORBITS. The string delay line is
+  clamped at ±20 (oscillator ±1), which is why a little string dominates the mix.
+  The `bow` patch scales the gain and uses 1/√d.
 
 ## v3.6 → v3.7 (additive oscillator fix) and porting the patches
 
