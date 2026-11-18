@@ -276,7 +276,7 @@ becomes percussive or plucked, and the LPG makes notes.
 - `Y-<jack>`: that CV jack now moves the **wavetable row (Y)** instead of its knob. The ORBITS-menu SHAPE position is the starting row and the CV moves around it. Rows are clamped to 1–8, so the CV never switches to the additive oscillator.
 - `chords-pro`: the 16 chords become the Laniakea Pro set: unison, octaves, fifths, fourths, major, dom7, maj7, augmented, minor, min7, diminished, sus2, sus4, add9, min9, maj6.
 - `leddedupe`: fixes the v3.4+ menu crackle.
-- `usab`: factory reset sets all SPACE amounts to 0 (instead of 75 %), the 8 rows spread to 88 % of
+- `usab`: factory reset sets the SPACE amounts to 25 % (pitch 0 %) instead of 75 %, the 8 rows spread to 88 % of
   ORBITS-menu SHAPE (instead of 78 %), and fixed-octave FREQ ranges cover 12 semitones (instead of 7).
 - `quant`: scale quantizer. In the SPACE menu, FREQ picks the scale and SPACE! the root. FREQ snaps to the scale, and SPACE! no longer bends pitch.
 

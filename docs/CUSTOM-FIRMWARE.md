@@ -154,11 +154,16 @@ factory reset. Each can be turned off on its own.
 
 | Option | Default | Stock behaviour → patched |
 | --- | --- | --- |
-| `space_defaults` | on | After a reset all 7 SPACE amounts were 75 %: with SPACE! down, every parameter (pitch too) ran at 25 %, so the module seemed silent or played sub-bass. Now they default to **0**, so knobs do exactly what they say. Values you set in the SPACE menu are still saved as usual. |
+| `space_default` | 25 | After a reset all 7 SPACE amounts were 75 %: with SPACE! down, every parameter (pitch too) ran at 25 %, so the module seemed silent or played sub-bass. Now ORBITS, COLOR, SHAPE, EFFECTS and CLUSTER default to **25 %**, so SPACE! still does something but gently. |
+| `space_default_freq` | 0 | The pitch slot defaults to **0 %**, so SPACE! never drops the pitch after a reset (25 % would be about two octaves at SPACE! minimum). With the quantizer this slot is the scale, so 0 = off. |
 | `y_top` | 0.88 | ORBITS-menu SHAPE reached row 8 at ~78 %, then nothing changed until the additive oscillator at 95 %. Now the 8 rows spread to **88 %**, leaving a small dead zone before additive. |
 | `freq_semis` | 12 | In the fixed-octave FREQ ranges (ORBITS menu → FREQ), the knob covered only **7** semitones, although the manual says 12. Now it covers **12**. |
 
-Examples: `usability:y_top=0.92` (smaller dead zone), `usability:space_defaults=0` (keep stock defaults).
+The SPACE! knob's own slot always resets to 0 (unused by stock firmware; with the quantizer it's the root, so C).
+These only apply on a factory reset / first boot. Values you set in the SPACE menu are saved as usual.
+
+Examples: `usability:space_default=10` (gentler SPACE!), `usability:space_default=75,space_default_freq=75`
+(stock defaults), `usability:y_top=0.92` (smaller dead zone).
 `usability` always runs first, and `cv_to_y` follows its row spread automatically.
 
 ## Fix: menu crackle (`led_dedupe`)

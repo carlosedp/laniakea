@@ -87,7 +87,7 @@ Each patch is a small Python file in `patches/`. Combine them freely:
 | Patch | What it does |
 | --- | --- |
 | `cv_to_y` | route a CV jack (`source=effects/space/orbits/...`) to the wavetable Y axis |
-| `usability` | sane factory-reset defaults (SPACE amounts 0), rows spread to 88 % of ORBITS-menu SHAPE, 12-semitone FREQ ranges |
+| `usability` | sane factory-reset defaults (SPACE amounts 25 %, pitch 0 %; adjustable), rows spread to 88 % of ORBITS-menu SHAPE, 12-semitone FREQ ranges |
 | `led_dedupe` | **fix**: refresh the LED ring only when it changes (removes the v3.4+ menu crackle) |
 | `chords` | replace the 16 ORBITS-menu chords (Laniakea Pro set, or your own file) |
 | `quantizer` | scale quantizer: SPACE-menu FREQ = scale, SPACE-menu SPACE! = root; FREQ snaps to the scale |
