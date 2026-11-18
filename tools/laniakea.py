@@ -15,6 +15,7 @@ USB-serial bridge, not the ESP32.
   python tools/laniakea.py bank DIR [DIR...] -o out.wav          build a 64-wave bank from single cycles
   python tools/laniakea.py monitor                   serial console
   python tools/laniakea.py editor                    start the local wavetable editor
+  python tools/laniakea.py patcher list|build ...    firmware patches (same as tools/patcher.py)
 """
 from __future__ import annotations
 
@@ -575,6 +576,11 @@ def cmd_editor(a):
     except KeyboardInterrupt:
         pass
 
+def cmd_patcher(a):
+    """Run tools/patcher.py in-process: `laniakea patcher list|build|disasm|find|verify ...`."""
+    from patcher import main as patcher_main
+    patcher_main(a.args, prog=f"{Path(sys.argv[0]).stem} patcher")
+
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -602,11 +608,17 @@ def main():
     p = sub.add_parser("bank", help="build a 64-wave bank from single-cycle WAV folders/files")
     p.add_argument("sources", nargs="+", help="1 source = whole grid; 2-8 = one per row")
     p.add_argument("-o", "--output", required=True); p.set_defaults(fn=cmd_bank)
+    # add_help=False + REMAINDER: everything after `patcher` (incl. -h) goes to the patcher CLI
+    p = sub.add_parser("patcher", add_help=False, help="list/build firmware patches (same as tools/patcher.py)")
+    p.add_argument("args", nargs=argparse.REMAINDER); p.set_defaults(fn=cmd_patcher)
     p = sub.add_parser("monitor"); p.add_argument("--baud", type=int, default=115200)
     p.add_argument("--reset", action="store_true"); p.set_defaults(fn=cmd_monitor)
     p = sub.add_parser("editor"); p.add_argument("--http-port", type=int, default=8765)
     p.add_argument("--no-browser", action="store_true"); p.set_defaults(fn=cmd_editor)
-    a = ap.parse_args()
+    argv = sys.argv[1:]
+    if argv[:1] == ["patcher"]:          # pass the rest through untouched (argparse would eat -h etc.)
+        return cmd_patcher(argparse.Namespace(args=argv[1:]))
+    a = ap.parse_args(argv)
     a.fn(a)
 
 

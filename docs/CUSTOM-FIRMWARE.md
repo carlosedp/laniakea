@@ -21,13 +21,13 @@ There's no on/off switch inside the module. To change features, **build a new im
 the patches you want, then flash it**. Leaving a patch out of the build command disables it.
 
 ```powershell
-$P = ".venv\Scripts\python.exe tools\patcher.py"      # Linux/macOS: .venv/bin/python tools/patcher.py
-& $P list                                             # all patches + options
-& $P build recommended                                # cv_to_y:source=effects + led_dedupe
-& $P build led_dedupe                                 # only the crackle fix (stock Y behaviour)
-& $P build cv_to_y:source=effects led_dedupe chords:set=pro
-& $P build cv_to_y:source=space,gain=-0.78 led_dedupe
-& $P build recommended quantizer                      # + scale quantizer
+# Windows: .\laniakea patcher ...      Linux/macOS/WSL/Git Bash: ./laniakea.sh patcher ...
+.\laniakea patcher list                                             # all patches + options
+.\laniakea patcher build recommended                                # cv_to_y:source=effects + led_dedupe
+.\laniakea patcher build led_dedupe                                 # only the crackle fix (stock Y behaviour)
+.\laniakea patcher build cv_to_y:source=effects led_dedupe chords:set=pro
+.\laniakea patcher build cv_to_y:source=space,gain=-0.78 led_dedupe
+.\laniakea patcher build recommended quantizer                      # + scale quantizer
 ```
 
 Images go to `firmware/custom/`. Flash one of three ways:
@@ -145,7 +145,7 @@ Notes:
 - **Chords** (CLUSTER voices) are built on top of the quantized root note, so pick chords that
   fit the scale.
 
-Build: `patcher.py build recommended quantizer`.
+Build: `laniakea patcher build recommended quantizer`.
 
 ## Fix: menu crackle (`led_dedupe`)
 

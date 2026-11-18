@@ -45,7 +45,7 @@ PRESETS = {
 def load_patch(name: str):
     path = PATCH_DIR / f"{name}.py"
     if not path.exists():
-        raise SystemExit(f"no patch {name!r} (see `patcher.py list`)")
+        raise SystemExit(f"no patch {name!r} (see `laniakea patcher list`)")
     spec = importlib.util.spec_from_file_location(f"patches.{name}", path)
     assert spec and spec.loader
     mod = importlib.util.module_from_spec(spec)
@@ -149,8 +149,9 @@ def cmd_verify(a):
         raise SystemExit("INVALID image")
 
 
-def main():
-    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+def main(argv=None, prog=None):
+    """argv/prog let `laniakea patcher ...` reuse this CLI in-process."""
+    ap = argparse.ArgumentParser(prog=prog, description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
     sub.add_parser("list").set_defaults(fn=cmd_list)
     b = sub.add_parser("build"); b.add_argument("patches", nargs="+"); b.add_argument("--base", default="v3.6")
@@ -159,7 +160,7 @@ def main():
     d.add_argument("--before", type=int, default=0); d.add_argument("--base", default="v3.6"); d.set_defaults(fn=cmd_disasm)
     f = sub.add_parser("find"); f.add_argument("text"); f.set_defaults(fn=cmd_find)
     v = sub.add_parser("verify"); v.add_argument("file"); v.set_defaults(fn=cmd_verify)
-    a = ap.parse_args()
+    a = ap.parse_args(argv)
     a.fn(a)
 
 

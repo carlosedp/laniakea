@@ -23,7 +23,7 @@ powershell -ExecutionPolicy Bypass -File scripts\setup.ps1      # 1. Python venv
 .venv\Scripts\python.exe scripts\install_re_tools.py --only xtensa
                                                                # 2. Xtensa assembler, needed to build patches
 .\laniakea backup                                               # 3. FULL flash dump incl. your calibration (keep it!)
-.venv\Scripts\python.exe tools\patcher.py build recommended     # 4. download official v3.6 + apply patches
+.\laniakea patcher build recommended                          # 4. download official v3.6 + apply patches
 .\laniakea flash "firmware\custom\laniakea_v3.6+Y-effects+leddedupe.bin"   # 5. flash it (calibration is kept)
 ```
 
@@ -33,7 +33,7 @@ powershell -ExecutionPolicy Bypass -File scripts\setup.ps1      # 1. Python venv
 sh scripts/setup.sh                                   # 1. venv (uses uv, python3-venv, or downloads a local uv)
 .venv/bin/python scripts/install_re_tools.py --only xtensa   # 2. Xtensa assembler for your OS/CPU
 ./laniakea.sh backup                                  # 3. full flash dump (keep it!)
-.venv/bin/python tools/patcher.py build recommended   # 4. download official v3.6 + apply patches
+./laniakea.sh patcher build recommended               # 4. download official v3.6 + apply patches
 ./laniakea.sh flash "firmware/custom/laniakea_v3.6+Y-effects+leddedupe.bin"   # 5. flash it
 ```
 
@@ -46,8 +46,12 @@ crackle**. To undo: `laniakea flash v3.6` (official), or `laniakea restore <back
 
 ## Everyday use
 
-`laniakea.cmd` (Windows) and `./laniakea.sh` (Linux/macOS) run `tools/laniakea.py` with the
-local venv. The examples use the Windows form:
+Two launchers run `tools/laniakea.py` with the local venv. Pick the one that matches your **shell**:
+
+- `.\laniakea` (`laniakea.cmd`): Windows **cmd / PowerShell**
+- `./laniakea.sh`: **bash/zsh/sh**, i.e. Linux, macOS, WSL, and Git Bash on Windows. A `.cmd` file can't run there (`@echo: not found`).
+
+The examples use the Windows form. Everything, including `patcher`, works the same with `./laniakea.sh`:
 
 ```powershell
 .\laniakea ports                 # find the module (CH340)
@@ -71,13 +75,12 @@ local venv. The examples use the Windows form:
 Each patch is a small Python file in `patches/`. Combine them freely:
 
 ```powershell
-$P = ".venv\Scripts\python.exe tools\patcher.py"
-& $P list
-& $P build recommended                                # cv_to_y:source=effects + led_dedupe
-& $P build cv_to_y:source=effects chords:set=pro led_dedupe
-& $P build cv_to_y:source=shape,gain=-0.78            # SHAPE CV scans rows (inverted)
-& $P build chords:set=my_chords.txt                   # your own 16 chords
-& $P build recommended quantizer                      # + scale quantizer
+.\laniakea patcher list
+.\laniakea patcher build recommended                                # cv_to_y:source=effects + led_dedupe
+.\laniakea patcher build cv_to_y:source=effects chords:set=pro led_dedupe
+.\laniakea patcher build cv_to_y:source=shape,gain=-0.78            # SHAPE CV scans rows (inverted)
+.\laniakea patcher build chords:set=my_chords.txt                   # your own 16 chords
+.\laniakea patcher build recommended quantizer                      # + scale quantizer
 ```
 
 | Patch | What it does |
@@ -106,8 +109,8 @@ Output goes to `firmware\custom\`. How patches work and how to write one:
 
 | What | How to get it |
 | --- | --- |
-| Official firmware (`firmware/official/`) | `.\laniakea fetch`, or automatically on `patcher.py build` / `flash vX.Y` |
-| Patched builds (`firmware/custom/`) | `tools\patcher.py build …` |
+| Official firmware (`firmware/official/`) | `.\laniakea fetch`, or automatically on `laniakea patcher build` / `laniakea flash vX.Y` |
+| Patched builds (`firmware/custom/`) | `laniakea patcher build …` |
 | Your flash dumps (`firmware/backup/`) | `.\laniakea backup` |
 | Magerit manuals (`docs/manuals/`) | `.\laniakea fetch --manuals` |
 | Ghidra project, decompiled code (`re/ghidra/`) | `scripts/install_re_tools.py` then `scripts\ghidra_analyze.ps1 -Version v3.6` (Windows) or `scripts/ghidra_analyze.sh v3.6` |

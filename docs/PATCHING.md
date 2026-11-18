@@ -35,12 +35,11 @@ The examples use Windows syntax. On Linux/macOS use `.venv/bin/python` instead o
 `.venv\Scripts\python.exe` and `./laniakea.sh` instead of `.\laniakea`; everything else is the same.
 
 ```powershell
-$P = ".venv\Scripts\python.exe tools\patcher.py"
-& $P list                                      # patches and options
-& $P build cv_to_y:source=effects chords:set=pro
-& $P disasm 0x400e3118 --before 6 --bytes 16   # look at code (shows the enclosing function)
-& $P find tabla                                # string -> functions that use it
-& $P verify firmware\custom\<file>.bin
+.\laniakea patcher list                                      # patches and options
+.\laniakea patcher build cv_to_y:source=effects chords:set=pro
+.\laniakea patcher disasm 0x400e3118 --before 6 --bytes 16   # look at code (shows the enclosing function)
+.\laniakea patcher find tabla                                # string -> functions that use it
+.\laniakea patcher verify firmware\custom\<file>.bin
 .\laniakea flash firmware\custom\<file>.bin    # backup first!
 ```
 
@@ -66,7 +65,7 @@ def apply(fw, amount):
 ### 1. Find the code
 - [docs/RE-NOTES.md](RE-NOTES.md): the important functions, globals and the knob/CV table.
 - `re/ghidra/v3.6/decompiled.c`: C-like decompiled code for all 1,363 functions.
-- `patcher.py find <text>`: log strings and NVS keys lead you to their functions.
+- `laniakea patcher find <text>`: log strings and NVS keys lead you to their functions.
 - `scripts\ghidra_gui.ps1`: open the project in Ghidra, follow cross-references, rename things.
 
 ### 2. Pick a hook point
@@ -76,7 +75,7 @@ def apply(fw, amount):
 
 ### 3. Pick scratch registers
 A register is free if, after the hook point, it is **written before it is read** on every path.
-Check with `patcher.py disasm ADDR --bytes 200`. In the routines patched so far, `a8`, `f0`, `f2` and `f7` are free (noted in `tools/symbols.py`). Windowed-ABI note: don't touch `a0`/`a1` (return address and stack pointer).
+Check with `laniakea patcher disasm ADDR --bytes 200`. In the routines patched so far, `a8`, `f0`, `f2` and `f7` are free (noted in `tools/symbols.py`). Windowed-ABI note: don't touch `a0`/`a1` (return address and stack pointer).
 
 ### 4. Useful Xtensa (ESP32 FPU) instructions
 
@@ -96,7 +95,7 @@ Check with `patcher.py disasm ADDR --bytes 200`. In the routines patched so far,
 The [Xtensa ISA reference](https://www.cadence.com/content/dam/cadence-www/global/en_US/documents/tools/silicon-solutions/compute-ip/isa-summary.pdf) has the full instruction list.
 
 ### 5. Test safely
-1. `.\laniakea backup` (once), then `patcher.py build …` and `.\laniakea flash <file>`.
+1. `.\laniakea backup` (once), then `laniakea patcher build …` and `.\laniakea flash <file>`.
 2. Check the boot log: `.\laniakea monitor --reset`. A crash prints `Guru Meditation Error` with a PC address; disassemble around it.
 3. Something wrong? `.\laniakea flash v3.6` (keeps your calibration) or `.\laniakea restore <backup> --yes`.
 

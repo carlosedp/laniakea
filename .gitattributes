@@ -1,0 +1,17 @@
+# Normalise text files to LF in the repository.
+* text=auto
+
+# Shell scripts must keep LF on every OS (CRLF breaks sh/bash, WSL, Git Bash).
+*.sh        text eol=lf
+laniakea.sh text eol=lf
+
+# Windows-only launchers/scripts: CRLF in the working tree.
+*.cmd text eol=crlf
+*.bat text eol=crlf
+*.ps1 text eol=crlf
+
+# Binary data (never in git here, but just in case)
+*.bin binary
+*.wav binary
+*.pdf binary
+*.zip binary
