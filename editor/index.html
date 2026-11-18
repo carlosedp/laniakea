@@ -25,6 +25,9 @@
       <div class="panel-head">
         <h2>Banks <small>8 banks on the module (banks firmware patch). Kept in this browser until you upload</small></h2>
         <div class="tools">
+          <button id="btn-read-all" disabled title="Read all 8 banks from the module into this browser (a backup of what the module holds)">Read all from module</button>
+          <button id="btn-export-banks" title="Save all 8 banks (names included) as one .json file">Export banks…</button>
+          <label class="btn" title="Load a banks .json (from Export banks or `laniakea waves backup`)">Import banks…<input id="file-banks" type="file" accept=".json" hidden></label>
           <button id="btn-upload-all" class="primary" disabled title="Upload every filled bank to the module (empty banks are left as they are)">Upload all banks to module</button>
         </div>
       </div>

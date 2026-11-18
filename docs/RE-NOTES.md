@@ -155,6 +155,28 @@ Results on hardware (2026-11-17):
   flag 0x3ffc3529), on a rising edge, with `modores` > 0.5. Without a cable the EXCITER level is
   forced to 0, and in pluck mode the string's continuous drive is scaled by that level.
 
+## EXCITER, string model and jack detection (used by `strum`)
+
+- `adc_task` (FUN_400dfcf0, priority 24) reads the CVs, runs jack detection, then calls the
+  pot/menu/mixer task body (FUN_400e3800 → param_mix FUN_400e2bf4) at the end of every loop. CV
+  processing and the mixer therefore never race.
+- Jack detection: a pseudo-random bit is driven onto the jack normalling (GPIO 0x3ff44014/18);
+  per jack a mismatch counter (EXCITER: byte 0x3ffc3528) is turned every 24 samples into the
+  flag byte (+1): < 2 mismatches → 0 (no cable), ≥ 13 → 1, in between unchanged. That's the
+  `CV%d - jack: a -> b` log line.
+- EXCITER CV (0x3ffc3574): 0 when unpatched, else (raw − offset)·−2, clamped 0..1.
+- Trigger (param_mix): gate state 0x3ffc37cc; rising when level > 0.24 and up > 0.01 since the
+  last pass, re-armed below 0.12; only with the jack flag set. On the trigger the pluck flag is
+  raised (if `modores` > 0.5) and the LPG engine (FUN_400e1f1c) gets state 3; no cable → state 8.
+- Audio task: with the jack flag 0 the LPG parameters are held "open" (1.0 / 0.5 / 0.25); with 1
+  they follow the LPG envelope.
+- String model (state 0x3ffbe6e0, set by FUN_400e258c): pluck = a noise burst of +0x38 samples
+  per trigger; bow = continuous thresholded noise scaled by +0x14 (8 − 6·damping). Output mix:
+  `out = osc + ((body + (string − body)·S) − osc)·M`, with M = ORBITS mix (1.4·knob − 0.2) and
+  S = clamp((SHAPE − 0.7)·4) (0x3ffc37c0). So the string, and bow/pluck, are only heard with
+  the effective SHAPE above 0.7.
+- Final pitch: settings + 0x1c (0x3ffc80dc in v3.6) = semitones / 108, after the quantizer hook.
+
 ## v3.6 → v3.7 (additive oscillator fix) and porting the patches
 
 Magerit's v3.7 ("improved additive oscillator", 2026-11-18) fixes the additive-mode clacking

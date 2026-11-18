@@ -89,6 +89,14 @@ V3_6 = {
     "led_hue_orbits_bow": 0x400E14C4,   # movi a3, 192 : ORBITS-menu EFFECTS colour when <= 50 % (bow)
     "led_hue_orbits_pluck": 0x400E14DD, # movi a3, 230 : ORBITS-menu EFFECTS colour when > 50 % (pluck)
     "esp_timer_get_time": 0x40083144,  # IRAM; returns microseconds (a10 = low word after call8)
+    # ---- EXCITER jack: CV, jack detection and LPG (strum patch); adc_task runs the mixer task
+    "adc_exc_unpatched": 0x400e0232,    # movi.n a11, 0 ; wfr f0, a11 : EXCITER unpatched -> CV 0 (f0 stored next)
+    "adc_mixer_call": 0x400e035b,       # call8 mixer_task_fn at the end of each adc_task loop
+    "mixer_task_fn": 0x400e3800,        # pot/menu/mixer task body (calls param_mix)
+    "mixer_jack_load": 0x400e303a,      # l8ui a4, a8, 1 : param_mix reads the EXCITER jack flag (trigger logic)
+    "motor_jack_load": 0x400df049,      # l8ui a8, a8, 1 : audio task reads it (0 = LPG held open)
+    "exciter_jack_flag": 0x3ffc3529,    # byte: 1 = cable in EXCITER (jack detection, every 24 samples)
+    "pitch_out": 0x3ffc80dc,            # float: final pitch / 108 (semitones, after the quantizer)
 
     # ---- ESP-IDF logging (initialised .data): esp_log default level, 3 = INFO
     "log_level": (0x3FFB0054, "03000000"),
@@ -177,6 +185,14 @@ V3_7 = {   # ported from 3.6 by re/port_syms.py, checked by hand (docs/RE-NOTES.
     "led_hue_orbits_bow": 0x400E1C98,   # movi a3, 192 : ORBITS-menu EFFECTS colour when <= 50 % (bow)
     "led_hue_orbits_pluck": 0x400E1CB1, # movi a3, 230 : ORBITS-menu EFFECTS colour when > 50 % (pluck)
     "esp_timer_get_time": 0x40083144,  # IRAM; returns microseconds (a10 = low word after call8)
+    # ---- EXCITER jack: CV, jack detection and LPG (strum patch); adc_task runs the mixer task
+    "adc_exc_unpatched": 0x400e0a06,    # movi.n a11, 0 ; wfr f0, a11 : EXCITER unpatched -> CV 0 (f0 stored next)
+    "adc_mixer_call": 0x400e0b2f,       # call8 mixer_task_fn at the end of each adc_task loop
+    "mixer_task_fn": 0x400e3fd8,        # pot/menu/mixer task body (calls param_mix)
+    "mixer_jack_load": 0x400e381a,      # l8ui a4, a8, 1 : param_mix reads the EXCITER jack flag (trigger logic)
+    "motor_jack_load": 0x400df6f6,      # l8ui a8, a8, 1 : audio task reads it (0 = LPG held open)
+    "exciter_jack_flag": 0x3ffc6181,    # byte: 1 = cable in EXCITER (jack detection, every 24 samples)
+    "pitch_out": 0x3ffcad34,            # float: final pitch / 108 (semitones, after the quantizer)
 
     # ---- ESP-IDF logging (initialised .data): esp_log default level, 3 = INFO
     "log_level": (0x3FFB0054, "03000000"),

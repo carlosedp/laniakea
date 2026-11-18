@@ -225,21 +225,29 @@ oscillator's pitch and always fed by the oscillator. EXCITER additionally _strik
 |                               | 12 o'clock: slightly stretched (tube / piano-like)                                                     |
 |                               | ~2 o'clock: **perfectly harmonic** (string)                                                            |
 |                               | fully right: compressed (hollow, membrane-like)                                                        |
+|                               | **string model:** fades in from ~2 o'clock (0.7), replaces the modes above ~0.95 (fully right)         |
 | **COLOR**                     | brightness and length of the ring: right = brighter, longer                                            |
 | **EXCITER** level             | rising edge = strike. A **higher voltage strikes brighter** (it adds to the brightness), like velocity |
 | ORBITS menu → **ORBITS knob** | EXCITER decay: how long the LPG/strike stays open                                                      |
 | ORBITS menu → **COLOR**       | how much the LPG filters as it closes (VCA → low-pass gate)                                            |
-| ORBITS menu → **EFFECTS**     | string response: ≤ 50 % = **bowed** (no pluck, smooth), > 50 % = **plucked** on each trigger           |
+| ORBITS menu → **EFFECTS**     | string model: ≤ 50 % = **bowed** (continuous bowing noise), > 50 % = **plucked** (a burst per trigger) |
 
 **Without anything in EXCITER** the resonator acts as a _body_ on the continuous
 oscillator: a resonant, metallic or woody colouring of the drone. **With EXCITER** it
 becomes percussive or plucked, and the LPG makes notes.
 
+**Bow/pluck only acts on the string model** (code): you hear it only with SHAPE right of
+~2 o'clock (the string fades in from 0.7, alone above 0.95) and ORBITS well to the right.
+SHAPE here is the _effective_ value: the SPACE! macro lowers it by the SHAPE amount set in
+the SPACE menu, so with SPACE! down the string may never come in. Bow excites the string
+all the time (even with no cable); pluck only on an EXCITER trigger (or, with the `strum`
+firmware patch and no cable, on every new note).
+
 ### Recipes (start from the init patch, then:)
 
-- _Plucked string_: ORBITS fully right, SHAPE ~2 o'clock (harmonic), COLOR ~1 o'clock. ORBITS menu: EFFECTS > 50 % (pluck), ORBITS knob ~10 o'clock (short decay). Triggers into EXCITER, sequence V/OCT.
+- _Plucked string_: ORBITS fully right, SHAPE fully right (string model), COLOR ~1 o'clock, SPACE! up (or SHAPE's SPACE amount at 0). ORBITS menu: EFFECTS > 50 % (pluck), ORBITS knob ~10 o'clock (short decay). Triggers into EXCITER, sequence V/OCT. With the `strum` patch, skip the triggers: each new V/OCT note plucks.
 - _Bell / mallet_: same, but SHAPE ~9–10 o'clock (bell spacing) and COLOR further right for a long shimmer. Accents: a louder trigger voltage = brighter strike.
-- _Bowed string pad_: ORBITS menu: EFFECTS < 50 % (bow), ORBITS knob ~2 o'clock (long). A slow AD/ADSR into EXCITER. SHAPE ~2 o'clock, some EFFECTS (reverb).
+- _Bowed string pad_: ORBITS menu: EFFECTS < 50 % (bow), ORBITS knob ~2 o'clock (long). A slow AD/ADSR into EXCITER. SHAPE fully right (string model), some EFFECTS (reverb).
 - _Metal / plate hits_: SHAPE fully left, COLOR right, short triggers. Try CLUSTER right for chordal excitation.
 - _Resonant drone body_: nothing in EXCITER, ORBITS ~12 o'clock, CLUSTER right (a chord rings the modes sympathetically), slow LFO on SHAPE CV to morph the material.
 
@@ -248,6 +256,7 @@ becomes percussive or plucked, and the LPG makes notes.
 - The resonator follows FREQ / V/OCT. Moving the pitch retunes the "instrument".
 - ORBITS right of ~86 % removes the dry oscillator completely. If you hear nothing with EXCITER patched, the strike may be too weak: raise COLOR or the trigger voltage.
 - In the ORBITS menu, EFFECTS is a two-way switch (bow/pluck); intermediate positions do nothing more.
+- No difference between bow and pluck? SHAPE isn't far enough right (string model not in), or the SPACE! macro is pulling SHAPE down.
 
 ## Menus and knob pickup (code)
 

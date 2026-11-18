@@ -630,6 +630,7 @@ function renderBanks() {
   $('btn-upload-bank').disabled = !on || !slot;
   $('btn-upload-all').disabled = !on || !library.some(Boolean);
   $('btn-read').disabled = !on;
+  $('btn-read-all').disabled = !on;
   const sw = $('switch-tabs');
   sw.innerHTML = '';
   for (let k = 1; k <= 8; k++) {
@@ -740,6 +741,78 @@ $('btn-upload-all').addEventListener('click', () => {
     moduleBank = banks[banks.length - 1]; saveLibrary();
     log('All banks uploaded.');
   });
+});
+
+// ------------------------------------------------------------------ bank backup (same .json as `laniakea waves backup`)
+const BANKS_FORMAT = 'laniakea-banks';
+function i16ToB64(i16) {
+  let s = ''; const u8 = new Uint8Array(i16.buffer, i16.byteOffset, i16.byteLength);
+  for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode(...u8.subarray(i, i + 0x8000));
+  return btoa(s);
+}
+function b64ToI16(b64) {
+  const bin = atob(b64); const u8 = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+  return new Int16Array(u8.buffer);
+}
+const fromModule = (raw) => raw.map((w) => dsp.resampleCycle(Float32Array.from(w, (v) => v / 32767), LEN));
+
+$('btn-read-all').addEventListener('click', () => {
+  if (library.some(Boolean) && !confirm('Replace the 8 banks in this browser with the 8 banks on the module?')) return;
+  busy(async () => {
+    const playing = moduleBank || await serial.queryBank();
+    progress(0);
+    for (let n = 1; n <= 8; n++) {
+      await serial.selectBank(n);
+      const raw = await serial.readWaves(() => {});
+      library[n - 1] = { name: library[n - 1]?.name || `Bank ${n} (module)`, waves: fromModule(raw), uploaded: true };
+      progress(n / 8);
+      log(`Bank ${n} read from the module.`);
+    }
+    if (playing) { await serial.switchBank(playing); moduleBank = playing; }
+    saveLibrary();
+    log('All 8 banks read. Use Export banks… to keep a copy as a file.');
+  });
+});
+
+$('btn-export-banks').addEventListener('click', () => {
+  const out = { format: BANKS_FORMAT, version: 1, source: 'editor', samples: LEN, created: new Date().toISOString(), banks: [] };
+  library.forEach((s, i) => {
+    if (!s) return;
+    if (s.factory) { out.banks.push({ bank: i + 1, name: s.name, factory: true }); return; }
+    const i16 = new Int16Array(WAVES * LEN);
+    s.waves.forEach((w, k) => w.forEach((v, j) => { i16[k * LEN + j] = Math.max(-32767, Math.min(32767, Math.round(v * 32767))); }));
+    out.banks.push({ bank: i + 1, name: s.name, data: i16ToB64(i16) });
+  });
+  if (!out.banks.length) { log('No banks to export.'); return; }
+  const stamp = new Date().toISOString().replace(/[:T]/g, '-').slice(0, 19);
+  const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(new Blob([JSON.stringify(out)], { type: 'application/json' })), download: `laniakea_banks_${stamp}.json` });
+  a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  log(`Exported ${out.banks.length} bank(s).`);
+});
+
+$('file-banks').addEventListener('change', async (e) => {
+  const f = e.target.files[0]; e.target.value = '';
+  if (!f) return;
+  try {
+    const d = JSON.parse(await f.text());
+    if (d.format !== BANKS_FORMAT) throw new Error('not a Laniakea banks file');
+    const n = Number(d.samples) || 128;
+    if (library.some(Boolean) && !confirm(`Load ${d.banks.length} bank(s) from ${f.name}? Banks with the same number are replaced in this browser.`)) return;
+    for (const b of d.banks) {
+      const i = Number(b.bank) - 1;
+      if (!(i >= 0 && i < 8)) continue;
+      if (b.factory) { library[i] = { name: b.name || 'Factory waves', factory: true, uploaded: false }; continue; }
+      const i16 = b64ToI16(b.data);
+      const waves = Array.from({ length: WAVES }, (_, k) => {
+        const w = Float32Array.from(i16.subarray(k * n, (k + 1) * n), (v) => v / 32767);
+        return n === LEN ? w : dsp.resampleCycle(w, LEN);
+      });
+      library[i] = { name: b.name || `Bank ${i + 1}`, waves, uploaded: false };
+    }
+    saveLibrary(); renderBanks();
+    log(`Imported ${d.banks.length} bank(s) from ${f.name}. Upload them with Upload all banks to module.`);
+  } catch (err) { log(`${f.name}: ${err.message}`); }
 });
 
 async function loadFactoryIntoEditor() {

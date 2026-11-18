@@ -16,6 +16,8 @@ USB-serial bridge, not the ESP32.
   python tools/laniakea.py waves select --bank 2      switch the module to bank 2
   python tools/laniakea.py waves current             which bank is the module playing? (banks patch)
   python tools/laniakea.py waves read [--bank N] -o F.wav   read a bank back from the module (banks patch)
+  python tools/laniakea.py waves backup [-o DIR]     all 8 banks -> DIR/banks.json + bank<N>.wav (banks patch)
+  python tools/laniakea.py waves restore DIR|banks.json [--bank N]   upload a backup (all banks or one)
   python tools/laniakea.py akwf fetch bw_perfectwaves fmsynth   download AKWF single cycles (CC0)
   python tools/laniakea.py bank DIR [DIR...] -o out.wav          build a 64-wave bank from single cycles
   python tools/laniakea.py monitor                   serial console
@@ -499,8 +501,9 @@ def upload_waves(port: str, waves, bank: int | None = None) -> None:
 
 
 def upload_banks(port: str, jobs) -> None:
-    """jobs = [(bank or None, waves), ...]. One reset, then per bank: select (if given) + upload.
-    The module saves each bank before it reads the next command, so they don't mix."""
+    """jobs = [(bank or None, waves or None), ...]. One reset, then per bank: select (if given) +
+    upload (waves None = factory waves, MAGD). The module saves each bank before it reads the
+    next command, so they don't mix."""
     s = open_serial(port)
     try:
         hard_reset(s)
@@ -508,14 +511,101 @@ def upload_banks(port: str, jobs) -> None:
         for bank, waves in jobs:
             if bank is not None:
                 select_bank(s, bank)
+            if waves is None:
+                if not handshake(s, b"MAGD"):
+                    die("module did not ACK 'MAGD'")
+                print(f"  bank {bank}: factory waves")
+                continue
             _send_waves(s, waves, f"bank {bank}: " if bank else "")
         print("waves uploaded" + (f" to bank(s) {', '.join(str(b) for b, _ in jobs)}" if jobs[0][0] else "") + ".")
     finally:
         s.close()
 
 
+BANKS_FORMAT = "laniakea-banks"
+
+
+def save_banks_json(path: Path, banks, samples: int, source: str) -> None:
+    """banks: {bank: {"name": str, "waves": int16 array [64][samples]} | {"name", "factory": True}}"""
+    import base64
+    import numpy as np
+    out = {"format": BANKS_FORMAT, "version": 1, "source": source, "samples": samples,
+           "created": dt.datetime.now().isoformat(timespec="seconds"), "banks": []}
+    for n in sorted(banks):
+        b = banks[n]
+        if b.get("factory"):
+            out["banks"].append({"bank": n, "name": b["name"], "factory": True})
+        else:
+            data = np.asarray(b["waves"], dtype="<i2").reshape(-1).tobytes()
+            out["banks"].append({"bank": n, "name": b["name"], "data": base64.b64encode(data).decode()})
+    path.write_text(json.dumps(out, indent=1), encoding="utf-8")
+
+
+def load_banks_json(path: Path):
+    """-> [(bank, waves as 64 lists of 128 int16 | None for factory, name)]"""
+    import base64
+    import numpy as np
+    d = json.loads(path.read_text(encoding="utf-8"))
+    if d.get("format") != BANKS_FORMAT:
+        die(f"{path} is not a Laniakea banks file")
+    n = int(d.get("samples", 128))
+    jobs = []
+    for b in d["banks"]:
+        if b.get("factory"):
+            jobs.append((int(b["bank"]), None, b.get("name", "")))
+            continue
+        x = np.frombuffer(base64.b64decode(b["data"]), dtype="<i2").reshape(WAVES, n).astype(float) / 32767.0
+        if n != WAVE_LEN:
+            x = np.array([resample_cycle(w, WAVE_LEN) for w in x])
+        jobs.append((int(b["bank"]), np.clip(np.round(x * 32767), -32767, 32767).astype(int).tolist(), b.get("name", "")))
+    return jobs
+
+
+def backup_banks(port: str, out_dir: Path) -> None:
+    """Read all 8 banks (exact 128-sample data) -> banks.json + bank<N>.wav; restores the bank."""
+    s = open_serial(port)
+    try:
+        time.sleep(0.3)
+        playing = query_bank(s)
+        if playing is None:
+            time.sleep(2.0)
+            playing = query_bank(s)
+        if playing is None:
+            die("no answer to 'MAGB' - is a firmware with the `banks` patch installed?")
+        banks = {}
+        for n in range(1, 9):
+            select_bank(s, n)
+            banks[n] = {"name": f"Bank {n} (module)", "waves": read_module_waves(s)}
+            print(f"  bank {n}: read")
+        select_bank(s, playing)
+    finally:
+        s.close()
+    out_dir.mkdir(parents=True, exist_ok=True)
+    save_banks_json(out_dir / "banks.json", banks, WAVE_LEN, "module")
+    for n, b in banks.items():
+        write_bank(out_dir / f"bank{n}.wav", [resample_cycle(w.astype(float) / 32767.0, SRC_WAVE_LEN) for w in b["waves"]])
+    print(f"backup of 8 banks in {out_dir} (banks.json = exact data for `waves restore`, bank<N>.wav to edit); "
+          f"module back on bank {playing}")
+
+
 def cmd_waves(a):
     port = find_port(a.port)
+    if a.action == "backup":
+        stamp = dt.datetime.now().strftime("%Y%m%d-%H%M%S")
+        backup_banks(port, Path(a.output) if a.output else WAVETABLES / "backup" / stamp)
+        return
+    if a.action == "restore":
+        if len(a.files) != 1:
+            die("waves restore needs one banks.json (or the backup folder that contains it)")
+        f = Path(a.files[0])
+        f = f / "banks.json" if f.is_dir() else f
+        if not f.exists():
+            die(f"{f} not found")
+        jobs = [(n, w) for n, w, _name in load_banks_json(f) if not a.bank or n == a.bank]
+        if not jobs:
+            die("nothing to restore")
+        upload_banks(port, jobs)
+        return
     if a.action in ("current", "read"):
         s = open_serial(port)
         try:
@@ -735,10 +825,10 @@ def main():
     p = sub.add_parser("restore"); p.add_argument("backup"); p.add_argument("--yes", action="store_true")
     p.set_defaults(fn=cmd_restore)
     p = sub.add_parser("waves", help="upload / restore / select wavetable banks")
-    p.add_argument("action", choices=["upload", "default", "select", "banks", "current", "read"])
+    p.add_argument("action", choices=["upload", "default", "select", "banks", "current", "read", "backup", "restore"])
     p.add_argument("files", nargs="*", help="upload: FILE.wav  |  banks: BANK=FILE.wav ...")
     p.add_argument("--bank", type=int, help="target bank 1..8 (needs the `banks` patch); default: current bank")
-    p.add_argument("-o", "--output", help="read: output .wav (default module_bank<N>.wav)")
+    p.add_argument("-o", "--output", help="read: output .wav (default module_bank<N>.wav); backup: output folder")
     p.add_argument("--decimate", action="store_true", help="drop odd samples like the Magerit web page (default: band-limited resample)")
     p.set_defaults(fn=cmd_waves)
     p = sub.add_parser("akwf", help="list/fetch AKWF single-cycle folders (CC0)")

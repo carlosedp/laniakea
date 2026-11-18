@@ -209,8 +209,17 @@ The module stores **8 wavetable banks** (64 waves each) instead of one.
   laniakea waves default --bank 4                # factory waves back in bank 4
   laniakea waves current                         # which bank is the module playing?
   laniakea waves read -o mine.wav [--bank 3]     # read a bank back from the module
+  laniakea waves backup [-o DIR]                 # all 8 banks -> DIR/banks.json + bank1..8.wav
+  laniakea waves restore DIR [--bank N]          # put a backup back (all banks, or one)
   laniakea factory-waves                         # factory bank as a WAV (to edit)
   ```
+
+**Backups:** `waves backup` reads all 8 banks exactly as the module stores them (and puts the
+module back on the bank it was playing); the default folder is `wavetables/backup/<date>/`. In
+the editor, **Read all from module** loads the 8 banks into the browser, **Export banks…** saves
+them as one `.json` and **Import banks…** loads one (from the editor or from `waves backup`).
+Back up before a firmware factory reset: it erases the banks with the other settings. An empty
+bank reads back as the factory waves.
 
 Without a bank number, uploads go to the bank currently loaded on the module.
 _Restore factory waves_ now also reloads the waves immediately (stock firmware needed a reboot).
@@ -272,6 +281,7 @@ Stock, both menus show the same single dim dot, so it's hard to tell where you a
 | SPACE menu: SPACE! + `quantizer`   | the dot; **step cue**² when the root note changes                       |
 | ORBITS menu: CLUSTER               | the dot; **step cue**² when the chord changes (16 chords)               |
 | ORBITS menu: EFFECTS (string mode) | LEDs 1–4 = **bow**, LEDs 5–8 = **pluck**                                |
+| ORBITS menu: SHAPE (Y row)         | one LED per **row** (LED 1 = row 1); whole ring **gold** in additive    |
 | other knobs                        | the stock dot, on the menu tint                                         |
 
 ¹ FREQ, ORBITS, COLOR, SHAPE, EFFECTS and CLUSTER. SPACE! keeps the dot: its own amount is
@@ -284,6 +294,25 @@ Build: included in `recommended`; add `quantizer` for the scale/root cues. Optio
 about as bright as the stock dot), `flash` (step-cue brightness, default 70, 0 = off),
 `flash_ms` (default 150), `flash_led` (which LED, 1–8, default 5).
 Example: `led_menus:flash=20,flash_led=1`.
+
+## Feature: internal exciter, Rings-style (`strum`)
+
+With **nothing in EXCITER** and the ORBITS-menu **EFFECTS on pluck** (> 50 %), every **new note**
+strikes the module as if a trigger had been patched into EXCITER: the LPG opens and decays
+(ORBITS-menu ORBITS = decay) and the string model gets a pluck. Sequence V/OCT (or turn FREQ)
+and it plays plucked notes on its own; with the quantizer, each quantized step is a note.
+
+- **Bow** (EFFECTS ≤ 50 %) keeps the stock behaviour: no cable = the open drone.
+- A cable in EXCITER always takes over.
+- For the string sound, turn SHAPE right of ~2 o'clock (the string model fades in from there,
+  alone near fully right) and ORBITS to the right. Below that, notes are LPG plucks of the
+  oscillator/body.
+- A "new note" is the final pitch moving to another semitone, with hysteresis against CV noise.
+
+Build: `laniakea patcher build recommended quantizer strum`. Options: `mode` (`pluck` default, or
+`always` = whenever EXCITER is empty, whatever bow/pluck), `strength` (strike level 0.3–1.0,
+default 0.8: higher = brighter, like a louder trigger), `gate_ms` (internal trigger length,
+default 10), `hyst` (semitones of hysteresis, default 0.3).
 
 ## Other patches
 
