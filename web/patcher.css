@@ -49,21 +49,3 @@ code, .mono { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; fo
 footer { text-align: center; padding-bottom: 24px; }
 @media (max-width: 600px) { .page { padding: 12px 16px; } header nav .btn { padding: 4px 8px; font-size: 12px; } }
 
-/* feature overview */
-.hero { padding: 8px 2px 14px; }
-.hero h2 { font-size: 22px; margin: 0 0 6px; letter-spacing: -.01em; }
-.hero p { margin: 0; color: var(--muted); font-size: 15px; max-width: 640px; }
-.feature-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
-.feature-grid .feature:last-child:nth-child(3n+1) { grid-column: 1 / -1; }   /* lone last card spans the row */
-@media (max-width: 760px) { .feature-grid { grid-template-columns: minmax(0, 1fr); } }
-.feature { background: var(--panel); border: 1px solid var(--line); border-top: 3px solid var(--accent); border-radius: 10px; padding: 12px 14px; }
-.feature-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
-.feature h3 { margin: 0; font-size: 14px; }
-.feature code { font-size: 11px; color: var(--muted); background: var(--grid-cell); border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; white-space: nowrap; }
-.feature p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.45; }
-.extras { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr)); gap: 12px; margin-top: 12px; }
-.extra { display: flex; flex-direction: column; gap: 4px; text-decoration: none; color: var(--ink); padding: 12px 14px;
-         border: 1px dashed var(--line); border-radius: 10px; }
-.extra:hover { border-color: var(--accent); border-style: solid; }
-.extra b { color: var(--accent); font-size: 14px; }
-.extra span { color: var(--muted); font-size: 13px; }
