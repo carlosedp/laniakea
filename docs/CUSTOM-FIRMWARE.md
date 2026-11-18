@@ -36,7 +36,7 @@ the patches you want, then flash it**. Leaving a patch out of the build command 
 ```powershell
 # Windows: .\laniakea patcher ...      Linux/macOS/WSL/Git Bash: ./laniakea.sh patcher ...
 .\laniakea patcher list                                             # all patches + options
-.\laniakea patcher build recommended                                # usability + cv_to_y:source=effects + led_dedupe
+.\laniakea patcher build recommended                                # banks + usability + cv_to_y:source=effects + led_dedupe + led_menus
 .\laniakea patcher build led_dedupe                                 # only the crackle fix (stock Y behaviour)
 .\laniakea patcher build cv_to_y:source=effects led_dedupe chords:set=pro
 .\laniakea patcher build cv_to_y:source=space,gain=-0.78 led_dedupe
@@ -217,7 +217,7 @@ _Restore factory waves_ now also reloads the waves immediately (stock firmware n
 If you'd set a SPACE amount for EFFECTS before installing this patch, you may start in another
 bank: set SPACE-menu EFFECTS fully counter-clockwise for bank 1.
 
-Build: `laniakea patcher build recommended banks` (option `banks:banks=4` for fewer, wider zones).
+Build: included in `recommended` (option `recommended banks:banks=4` for fewer, wider zones).
 
 ## Usability fixes (`usability`)
 
@@ -270,7 +270,7 @@ unused (with the quantizer it is the root note).
 ² One LED (LED 5, the top of the ring) lights soft white for 150 ms; the rest of the ring keeps
 showing the dot.
 
-Build: `laniakea patcher build recommended banks quantizer led_menus`. Options:
+Build: included in `recommended`; add `quantizer` for the scale/root cues. Options:
 `tint` (menu tint brightness, default 6, 0 = off), `bright` (bars and bank LED, default 50,
 about as bright as the stock dot), `flash` (step-cue brightness, default 70, 0 = off),
 `flash_ms` (default 150), `flash_led` (which LED, 1–8, default 5).

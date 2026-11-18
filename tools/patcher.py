@@ -11,10 +11,11 @@ The official base image is downloaded from Magerit's public GitHub (sha256-verif
 the first time it's needed; it is never stored in this repository.
 
 Presets:
-  recommended   usability cv_to_y:source=effects led_dedupe
-                (sane reset defaults/ranges + EFFECTS jack -> wavetable Y + menu crackle fix)
+  recommended   banks usability cv_to_y:source=effects led_dedupe led_menus
+                (8 wavetable banks + sane reset defaults/ranges + EFFECTS jack -> wavetable Y
+                 + menu crackle fix + clearer LED ring in the menus)
   everything    every feature patch (banks, chords set=pro, cv_to_y source=effects, led_dedupe,
-                quantizer, usability); diagnostics and `quiet` are left out
+                led_menus, quantizer, usability); diagnostics and `quiet` are left out
 A patch named twice is applied once; the last spec wins: `recommended cv_to_y:source=orbits`.
 
 Examples:
@@ -47,7 +48,7 @@ DEFAULTS = {"cv_to_y": "source=effects",
 
 # Preset groups of patches for convenience
 PRESETS = {
-    "recommended": ["usability", "cv_to_y:source=effects", "led_dedupe"],
+    "recommended": ["banks", "usability", "cv_to_y:source=effects", "led_dedupe", "led_menus"],
     "everything": [p.stem for p in PATCH_DIR.glob("*.py") if not any(p.name.startswith(i) for i in IGNORE)]
 }
 

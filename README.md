@@ -24,7 +24,7 @@ powershell -ExecutionPolicy Bypass -File scripts\setup.ps1      # 1. Python venv
                                                                # 2. Xtensa assembler, needed to build patches
 .\laniakea backup                                               # 3. FULL flash dump incl. your calibration (keep it!)
 .\laniakea patcher build recommended                          # 4. download official v3.7 + apply patches
-.\laniakea flash "firmware\custom\laniakea_v3.7+usab+Y-effects+leddedupe.bin"   # 5. flash it (calibration is kept)
+.\laniakea flash "firmware\custom\laniakea_v3.7+banks8+usab+Y-effects+leddedupe+ledmenus.bin"   # 5. flash it (calibration is kept)
 ```
 
 **Linux / macOS** (sh):
@@ -34,7 +34,7 @@ sh scripts/setup.sh                                   # 1. venv (uses uv, python
 .venv/bin/python scripts/install_re_tools.py --only xtensa   # 2. Xtensa assembler for your OS/CPU
 ./laniakea.sh backup                                  # 3. full flash dump (keep it!)
 ./laniakea.sh patcher build recommended               # 4. download official v3.7 + apply patches
-./laniakea.sh flash "firmware/custom/laniakea_v3.7+usab+Y-effects+leddedupe.bin"   # 5. flash it
+./laniakea.sh flash "firmware/custom/laniakea_v3.7+banks8+usab+Y-effects+leddedupe+ledmenus.bin"   # 5. flash it
 ```
 
 - **Linux:** add yourself to the serial group once and log in again: `sudo usermod -aG dialout $USER` (Arch/Fedora: `uucp`). On Ubuntu, `brltty` can grab CH340 adapters (`sudo apt remove brltty`).
@@ -42,9 +42,10 @@ sh scripts/setup.sh                                   # 1. venv (uses uv, python
 - The wavetable editor works in any browser when started with `laniakea editor` (the module is reached
   through that local server). Opened as plain files, it needs Chrome/Edge (Web Serial).
 
-`recommended` = **usability fixes** (sane factory-reset defaults, wider wavetable rows, 12-semitone
-FREQ ranges) + **EFFECTS CV jack → wavetable Y (row)** + the **fix for the v3.4+ menu
-crackle**. Builds start from Magerit's v3.7 (add `--base v3.6` for the older one).
+`recommended` = **8 wavetable banks** (SPACE menu → EFFECTS; editor uploads to any bank) +
+**usability fixes** (sane factory-reset defaults, wider wavetable rows, 12-semitone FREQ ranges) +
+**EFFECTS CV jack → wavetable Y (row)** + the **fix for the v3.4+ menu crackle** + a **clearer
+LED ring in the menus** (menu tint, amount bars, bank / bow-pluck / step cues). Builds start from Magerit's v3.7 (add `--base v3.6` for the older one).
 To undo: `laniakea flash v3.7` (official), or `laniakea restore <backup> --yes`.
 
 ## Everyday use
@@ -82,12 +83,12 @@ Each patch is a small Python file in `patches/`. Combine them freely:
 
 ```powershell
 .\laniakea patcher list
-.\laniakea patcher build recommended                                # usability + cv_to_y:source=effects + led_dedupe
+.\laniakea patcher build recommended                                # banks + usability + cv_to_y:source=effects + led_dedupe + led_menus
 .\laniakea patcher build cv_to_y:source=effects chords:set=pro led_dedupe
 .\laniakea patcher build cv_to_y:source=shape,gain=-0.78            # SHAPE CV scans rows (inverted)
 .\laniakea patcher build chords:set=my_chords.txt                   # your own 16 chords
 .\laniakea patcher build recommended quantizer                      # + scale quantizer
-.\laniakea patcher build recommended banks                          # + 8 wavetable banks
+.\laniakea patcher build recommended chords:set=pro                 # + Laniakea Pro chord set
 ```
 
 | Patch | What it does |
