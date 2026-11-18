@@ -29,6 +29,8 @@ SPECS = [
     ["quantizer:scales=iwato,hyst=0.3", "led_dedupe", "chords:set=" +
      str(ROOT / "patches" / "chord_sets" / "example.txt")],
     ["banks:banks=2", "led_menus"],
+    ["strum:mode=always,lpg=0,reset_bow=0,strength=0.5", "bow:level=0.5,even=0"],
+    ["recommended", "strum", "bow:level=1,even=1"],
 ]
 
 

@@ -108,6 +108,9 @@ Each patch is a small Python file in `patches/`. Combine them freely:
 | `chords` | replace the 16 ORBITS-menu chords (Laniakea Pro set, or your own file) |
 | `banks` | 8 wavetable banks on the module; SPACE menu → EFFECTS selects the bank (loads when leaving the menu) |
 | `quantizer` | scale quantizer: SPACE-menu FREQ = scale, SPACE-menu SPACE! = root; FREQ snaps to the scale |
+| `led_menus` | clearer LED ring in the menus: menu tint, amount bars, bank / bow-pluck / wavetable row, step cue on scale, root and chord changes |
+| `strum` | internal exciter (Rings-style): with EXCITER empty and string mode = pluck, each new note opens the LPG and plucks the string |
+| `bow` | **fix**: tames the harsh bow noise of the string model (lower level, even across the ORBITS knob) |
 | `quiet` | silence serial logging |
 | `diag_guards`, `diag_noled` | diagnostics used to find the crackle (see RE notes) |
 | `_template` | starting point for your own patch |

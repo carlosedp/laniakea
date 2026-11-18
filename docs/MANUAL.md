@@ -30,6 +30,7 @@ from the official manual.
   - [Inputs](#inputs)
   - [Button gestures (Magerit manual; consistent with code)](#button-gestures-magerit-manual-consistent-with-code)
   - [With the patched firmware (`firmware/custom/`)](#with-the-patched-firmware-firmwarecustom)
+  - [Recipes with the patched firmware (`strum`, `bow`, `quantizer`)](#recipes-with-the-patched-firmware-strum-bow-quantizer)
 
 ## The confusing names, first
 
@@ -294,5 +295,56 @@ firmware patch and no cable, on every new note).
   ORBITS-menu SHAPE (instead of 78 %), and fixed-octave FREQ ranges cover 12 semitones (instead of 7).
 - `banks8`: 8 wavetable banks. SPACE menu → EFFECTS picks the bank (8 zones), which loads when you leave the menu. Uploads go to the loaded bank.
 - `quant`: scale quantizer. In the SPACE menu, FREQ picks the scale and SPACE! the root. FREQ snaps to the scale, and SPACE! no longer bends pitch.
+- `ledmenus`: the LED ring shows which menu you're in (blue SPACE, amber ORBITS), amounts as bars, the bank, bow/pluck, the wavetable row (gold = additive) and a short cue at LED 5 when the scale, root or chord changes.
+- `strum`: internal exciter. With nothing in EXCITER and ORBITS-menu EFFECTS on **pluck**, every new note opens the LPG and plucks the string; silence in between. On **bow** the module drones as stock. Factory reset sets bow.
+- `bow30e`: the bow mode's noise is lowered (30 %) and even across the ORBITS knob.
 
 Details, options, custom chord files, and how to build and flash: [CUSTOM-FIRMWARE.md](CUSTOM-FIRMWARE.md).
+
+## Recipes with the patched firmware (`strum`, `bow`, `quantizer`)
+
+The internal exciter turns Laniakea into a self-playing plucked voice: patch only **V/OCT** (a
+sequencer, or random CV) and leave **EXCITER empty**. The LPG opens on every **new** note and
+closes after the decay, so these recipes are about shaping that note.
+
+**The controls** (ORBITS menu unless noted):
+
+| Control                    | Role in these recipes                                                           |
+| -------------------------- | ------------------------------------------------------------------------------- |
+| EFFECTS                    | **pluck** (right half) = internal exciter on; **bow** (left half) = drone       |
+| ORBITS                     | **decay**: how long each note rings (left = short pluck, right = long)          |
+| COLOR                      | LPG colour: left = clean VCA, right = closes like a low-pass gate (darker tail) |
+| ORBITS knob (main)         | oscillator ↔ resonator mix: left = the wavetable alone, right = resonator alone |
+| SHAPE (main)               | wavetable X, and the resonator material; right of ~2 o'clock = the string model |
+| SPACE menu → FREQ / SPACE! | quantizer scale / root: each scale step is a new note                           |
+
+Start each recipe from the init patch (main ORBITS fully left, SPACE! up, CLUSTER at 12).
+
+- **Plucked string melody.** ORBITS menu: EFFECTS pluck, ORBITS ~10 o'clock, COLOR ~1 o'clock.
+  Main: ORBITS fully right, SHAPE fully right (string), COLOR ~1 o'clock. SPACE menu: FREQ on a
+  minor pentatonic. A random CV into V/OCT plays a guitar/koto-like line.
+- **Marimba / mallets.** As above, but main SHAPE ~9–10 o'clock (bell-like modes, no string),
+  ORBITS ~2 o'clock, ORBITS-menu ORBITS ~9 o'clock (short). Main COLOR right for a brighter hit.
+- **Harp chords.** Plucked string melody + main CLUSTER right of 12 (more voices) and ORBITS-menu
+  CLUSTER on a chord (maj7, add9…). Each note plucks the whole chord; a long decay and some
+  EFFECTS (reverb) make an ambient harp.
+- **West-coast bongo (no resonator).** Main ORBITS fully left (wavetable only), ORBITS-menu COLOR
+  fully right (LPG closes as a low-pass), ORBITS-menu ORBITS ~9 o'clock. A bright wave (SHAPE
+  right) gives the classic LPG "bonk"; the EFFECTS CV (Y patch) changes the timbre per note.
+- **Drone with plucks on top.** Build with `strum:lpg=false`: the oscillator keeps sounding and
+  only the string is plucked. Main ORBITS ~12 o'clock, SHAPE fully right.
+- **Bowed pad.** ORBITS-menu EFFECTS bow, main SHAPE fully right, ORBITS ~2–3 o'clock, COLOR ~1
+  o'clock, EFFECTS ~1 o'clock (reverb). With the `bow` patch the bowing is a soft, even texture;
+  a slow LFO into SHAPE CV moves between body and string.
+- **Ambient self-playing.** Slow random CV into V/OCT, quantizer on a pentatonic, ORBITS-menu
+  ORBITS ~3 o'clock (long), main EFFECTS ~2 o'clock. Turn FREQ by hand for extra notes: every
+  scale step you cross plucks too.
+
+### Gotchas with the internal exciter
+
+- **Silent module?** Pluck + no EXCITER cable = silence until the next note. Send notes or
+  switch to bow (LED ring: LEDs 1–4 = bow, 5–8 = pluck, with `ledmenus`).
+- A **repeated** note doesn't re-pluck: only a pitch _change_ counts. For repeats, patch a
+  trigger into EXCITER (a cable always takes over from the internal exciter).
+- Plucks sound dull or weak? Raise main COLOR (brightness) or rebuild with a higher
+  `strum:strength`. No string? SHAPE isn't far enough right, or SPACE! is down and pulling it back.

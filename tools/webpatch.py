@@ -23,7 +23,7 @@ import symbols  # noqa: E402
 from patchlib import Firmware, PatchError  # noqa: E402
 
 # shown in the web UI (diagnostic patches and `quiet` stay CLI-only)
-WEB_PATCHES = ["banks", "usability", "cv_to_y", "led_dedupe", "led_menus", "chords", "quantizer"]
+WEB_PATCHES = ["banks", "usability", "cv_to_y", "led_dedupe", "led_menus", "chords", "quantizer", "strum", "bow"]
 
 
 def _spec_values(spec: str) -> tuple[str, dict]:

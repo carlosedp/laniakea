@@ -31,6 +31,7 @@ OPTIONS = {
     "reset_bow": (True, "factory reset sets the string mode to bow (stock: pluck), so a reset module drones instead of waiting for notes"),
 }
 RANGES = {"strength": (0.3, 1.0), "gate_ms": (2, 100), "hyst": (0.05, 0.49)}
+CHOICES = {"mode": ["pluck", "always"]}
 TARGETS = ["3.6", "3.7"]
 
 STATE = 0x50001E80   # [0] effective jack flag, [4] virtual level (float), [8] note centre (float),
