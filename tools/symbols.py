@@ -83,6 +83,12 @@ V3_6 = {
     # ---- LED strip driver wrappers (led_dedupe patch); both start with `entry a1, 48`
     "led_set_pixel_fn": 0x400E58A8,
     "led_refresh_fn": 0x400E58E0,
+    # ---- LED value display (FUN_400e0d44 in v3.6; runs every 8 ms in the SPACE/ORBITS menus)
+    "led_display_hook": 0x400E112F,     # l32i a10, a7, 180 ; then call8 led_refresh. a7 = display object:
+                                       #   +0x58 knob colour code (hue 0..255), +0x84 dot position, +0x88 target
+    "led_hue_orbits_bow": 0x400E14C4,   # movi a3, 192 : ORBITS-menu EFFECTS colour when <= 50 % (bow)
+    "led_hue_orbits_pluck": 0x400E14DD, # movi a3, 230 : ORBITS-menu EFFECTS colour when > 50 % (pluck)
+    "esp_timer_get_time": 0x40083144,  # IRAM; returns microseconds (a10 = low word after call8)
 
     # ---- ESP-IDF logging (initialised .data): esp_log default level, 3 = INFO
     "log_level": (0x3FFB0054, "03000000"),
@@ -165,6 +171,12 @@ V3_7 = {   # ported from 3.6 by re/port_syms.py, checked by hand (docs/RE-NOTES.
     # ---- LED strip driver wrappers (led_dedupe patch); both start with `entry a1, 48`
     "led_set_pixel_fn": 0x400E6080,
     "led_refresh_fn": 0x400E60B8,
+    # ---- LED value display (FUN_400e0d44 in v3.6; runs every 8 ms in the SPACE/ORBITS menus)
+    "led_display_hook": 0x400E1903,     # l32i a10, a7, 180 ; then call8 led_refresh. a7 = display object:
+                                       #   +0x58 knob colour code (hue 0..255), +0x84 dot position, +0x88 target
+    "led_hue_orbits_bow": 0x400E1C98,   # movi a3, 192 : ORBITS-menu EFFECTS colour when <= 50 % (bow)
+    "led_hue_orbits_pluck": 0x400E1CB1, # movi a3, 230 : ORBITS-menu EFFECTS colour when > 50 % (pluck)
+    "esp_timer_get_time": 0x40083144,  # IRAM; returns microseconds (a10 = low word after call8)
 
     # ---- ESP-IDF logging (initialised .data): esp_log default level, 3 = INFO
     "log_level": (0x3FFB0054, "03000000"),

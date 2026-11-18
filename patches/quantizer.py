@@ -144,5 +144,6 @@ def apply(fw, scales, hyst):
     ssi     f0, a12, 0              /* remember for hysteresis */
 9:
 """)
+    fw.meta["quant_zones"] = nzones      # led_menus flashes the ring when the zone changes
     fw.tag("quant")
     return [f"zone {i + 2}: {n}" for i, n in enumerate(names)]

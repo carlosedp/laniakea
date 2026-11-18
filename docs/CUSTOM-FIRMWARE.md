@@ -5,6 +5,17 @@ set of patches applied. Nothing else changes: same sound engine, and your calibr
 settings are kept when flashing. v3.7 is Magerit's fix for the additive oscillator (the
 clacking in additive mode and the noise when leaving it); every patch works on both.
 
+- [Custom firmware: features, building and flashing](#custom-firmware-features-building-and-flashing)
+  - [Which patches are in my build?](#which-patches-are-in-my-build)
+  - [Enable / disable patches: build, then flash](#enable--disable-patches-build-then-flash)
+  - [Feature: wavetable Y axis on a CV jack (`cv_to_y`)](#feature-wavetable-y-axis-on-a-cv-jack-cv_to_y)
+  - [Feature: chord sets (`chords`)](#feature-chord-sets-chords)
+  - [Feature: scale quantizer (`quantizer`)](#feature-scale-quantizer-quantizer)
+  - [Feature: 8 wavetable banks (`banks`)](#feature-8-wavetable-banks-banks)
+  - [Usability fixes (`usability`)](#usability-fixes-usability)
+  - [Fix: menu crackle (`led_dedupe`)](#fix-menu-crackle-led_dedupe)
+  - [Other patches](#other-patches)
+
 ## Which patches are in my build?
 
 The patches are chosen when you **build**. Each build is a complete firmware image, and
@@ -236,6 +247,29 @@ The ring looks the same and the crackle is gone. It's in `recommended`. v3.7 fix
 additive-mode clacking in the engine; `led_dedupe` still applies there and only removes
 redundant LED transmissions. See
 [RE-NOTES](RE-NOTES.md#v33--v34-changes-menu-clacking-regression) for the investigation.
+
+## Feature: clearer LED ring in the menus (`led_menus`)
+
+Stock, both menus show the same single dim dot, so it's hard to tell where you are. With
+`led_menus` (only while a menu is open; the normal display is unchanged):
+
+| Where                              | Ring                                                                    |
+| ---------------------------------- | ----------------------------------------------------------------------- |
+| SPACE menu (any knob)              | unlit LEDs glow faintly **blue**                                        |
+| ORBITS menu (any knob)             | unlit LEDs glow faintly **amber**                                       |
+| SPACE menu: amount knobs¹          | a **bar** in the knob's colour: LED 1 … LED 8 = 0 … 100 %               |
+| SPACE menu: EFFECTS with `banks`   | all LEDs dim white, the **selected bank** bright white (LED 1 = bank 1) |
+| SPACE menu: FREQ with `quantizer`  | the dot shows the scale; the ring **flashes white** when it changes     |
+| ORBITS menu: EFFECTS (string mode) | LEDs 1–4 = **bow**, LEDs 5–8 = **pluck**                                |
+| other knobs                        | the stock dot, on the menu tint                                         |
+
+¹ FREQ, ORBITS, COLOR, SHAPE, EFFECTS and CLUSTER. SPACE! keeps the dot: its own amount is
+unused (with the quantizer it is the root note).
+
+Build: `laniakea patcher build recommended banks quantizer led_menus`. Options:
+`tint` (menu tint brightness, default 6, 0 = off), `bright` (bars and bank LED, default 50,
+about as bright as the stock dot), `flash` (scale-change flash brightness, default 90, 0 = off),
+`flash_ms` (default 120). Example: `led_menus:tint=10,flash_ms=200`.
 
 ## Other patches
 

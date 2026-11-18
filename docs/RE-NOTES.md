@@ -122,6 +122,7 @@ If the clacking disappears, it's UART activity coupling into the audio; if not, 
 blow-up guard is the next suspect.
 
 Results on hardware (2026-11-17):
+
 - `laniakea monitor` during the clacking: no log output → **serial logging ruled out**.
 - `diag_guards` build: counters stayed `0 -> 0` while clacking (block rate confirmed at
   1000/s) → **NaN/blow-up guards ruled out**.
@@ -135,6 +136,24 @@ Results on hardware (2026-11-17):
   Build: `patcher.py build cv_to_y:source=effects led_dedupe`.
 - `led_dedupe` on hardware: **ring works normally and the crackle is gone** → fix confirmed.
   Recommended daily build: `laniakea_v3.6+Y-effects+leddedupe.bin`.
+
+## LED ring in the menus (used by `led_menus`)
+
+- The LED task (FUN_400e12c8) sets the display state at +0x44 of the display object
+  (0x3ffc37e0 in v3.6): menus 1 and 2 → 'R' (0x52), so FUN_400e0d44 (value display) redraws
+  every 8 ms. Menu 0 → 0x14 (normal display).
+- Display object: +0x58 knob colour code (hue 0..255, HSV sector = hue·6/256), +0x84 animated
+  dot position, +0x88 target (= 1 + pot·6, so LEDs 2..8), +0xa0 animation flag, +0xb4 strip.
+  The dot is two LEDs, floor/ceil of the position, cross-faded, at 20 % brightness.
+- Colour codes. SPACE menu: FREQ 0x4a, ORBITS 0xa0, COLOR 0x74, SHAPE 0xae, SPACE! 0x80,
+  EFFECTS 0xc0, CLUSTER 0x60. ORBITS menu: FREQ 0xe6, ORBITS 0x44, COLOR 0x20, SHAPE 0x56,
+  SPACE! 0x00, EFFECTS 0xc0 (≤ 50 %, bow) / 0xe6 (> 50 %, pluck). That last one collides with
+  FREQ, so `led_menus` nudges the EFFECTS codes to 0xc1 / 0xe7.
+- Pot objects (0x3ffc3600.., 0x30 each) hold pointers to the knob's normal value, its raw
+  position (0x3ffc8118..8130, what the display shows), its ORBITS-menu value and its SPACE amount.
+- Bow/pluck (`modores`): a pluck is struck only when the EXCITER jack is patched (jack-detect
+  flag 0x3ffc3529), on a rising edge, with `modores` > 0.5. Without a cable the EXCITER level is
+  forced to 0, and in pluck mode the string's continuous drive is scaled by that level.
 
 ## v3.6 → v3.7 (additive oscillator fix) and porting the patches
 

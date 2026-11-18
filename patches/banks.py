@@ -275,6 +275,7 @@ def apply(fw, banks):
     retw
 """)
     _redirect_call(fw, s["uart_magd_erase_call"], s["wave_erase"], w_erase)
+    fw.meta["banks"] = banks            # led_menus draws the bank selector
     fw.tag(f"banks{banks}")
 
 
