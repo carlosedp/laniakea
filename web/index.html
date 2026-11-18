@@ -22,6 +22,22 @@
   </header>
 
   <div class="page">
+    <section class="panel features">
+      <h2>What the custom firmware adds</h2>
+      <ul class="feature-list">
+        <li><b>Menu crackle fix:</b> the v3.4+ clicking in menus (mostly in additive synth mode) came from the LED ring being redrawn every 8 ms. The ring now only refreshes when something on it changes. Magerit fixed the crackling in firmware 3.7; this patch stays to keep LED updates even lighter.</li>
+        <li><b>CV → wavetable Y:</b> turn any CV jack (e.g. EFFECTS) into a row/Y-axis CV, so you can sweep both wavetable axes by modulation.</li>
+        <li><b>Scale quantizer:</b> FREQ + V/OCT snap to a scale. Pick the scale and root in the SPACE menu; 11 scales: major, minor, pentatonics, dorian, blues and more.</li>
+        <li><b>8 wavetable banks</b> stored on the module. Switch banks from the SPACE menu; the module remembers the last one at power-up.</li>
+        <li><b>Custom chord table:</b> the CLUSTER chords can be the Pro's chord set (plus sus2/sus4/add9/min9/maj6) or your own voicings.</li>
+        <li><b>Clearer LED menus:</b> the SPACE and ORBITS menus each get their own tint, amounts show as bar graphs, and you can see the selected bank, the bow/pluck setting and when the scale changes.</li>
+        <li><b>Usability fixes:</b> factory-reset defaults no longer make the module sound silent or play sub-bass, the wavetable rows are spread wider on SHAPE, and the FREQ ranges cover 12 semitones as the manual says (stock is 7).</li>
+        <li><b>Toolkit:</b> full flash backup/restore (keeps your calibration), one-command build and flash, and a framework for writing your own patches. See <a href="https://github.com/carlosedp/laniakea" target="_blank" rel="noopener">GitHub</a>.</li>
+        <li><b>New <a href="../editor/">wavetable editor</a>:</b> browser-based, with AKWF bank building and upload management to the module.</li>
+      </ul>
+      <p class="hint">Details for every patch: <a href="https://github.com/carlosedp/laniakea/blob/main/docs/CUSTOM-FIRMWARE.md" target="_blank" rel="noopener">custom firmware docs</a>.</p>
+    </section>
+
     <section class="panel intro">
       <h2>How it works</h2>
       <ol class="steps-list">
