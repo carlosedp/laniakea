@@ -101,6 +101,7 @@ V3_6 = {
     "string_inv_density_store": 0x400e25d8,  # s32i.n a10, a2, 16 ; wfr f0, a8 : stores 1/d (bow impulse scale);
                                        #   d = ORBITS^2 (impulse density), ORBITS itself saved at a1+12
     "string_bow_gain_site": 0x400e25e6,      # wfr f6, a6 : f7 = 8 - 6d (bow gain), a7 = bow flag (pluck: f7 *= EXCITER)
+    "modores_default_load": (0x400e44d5, "a8"),  # l32r a8, =0.9 : factory-reset string mode (0.9 = pluck)
 
     # ---- ESP-IDF logging (initialised .data): esp_log default level, 3 = INFO
     "log_level": (0x3FFB0054, "03000000"),
@@ -201,6 +202,7 @@ V3_7 = {   # ported from 3.6 by re/port_syms.py, checked by hand (docs/RE-NOTES.
     "string_inv_density_store": 0x400e2db8,  # s32i.n a10, a2, 16 ; wfr f0, a8 : stores 1/d (bow impulse scale);
                                        #   d = ORBITS^2 (impulse density), ORBITS itself saved at a1+12
     "string_bow_gain_site": 0x400e2dc6,      # wfr f6, a6 : f7 = 8 - 6d (bow gain), a7 = bow flag (pluck: f7 *= EXCITER)
+    "modores_default_load": (0x400e4cad, "a8"),  # l32r a8, =0.9 : factory-reset string mode (0.9 = pluck)
 
     # ---- ESP-IDF logging (initialised .data): esp_log default level, 3 = INFO
     "log_level": (0x3FFB0054, "03000000"),

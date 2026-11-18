@@ -28,6 +28,7 @@ OPTIONS = {
     "hyst": (0.3, "pitch hysteresis in semitones before a new note counts (against CV noise)"),
     "lpg": (True, "true = each note opens the LPG (whole voice plucks, silent in between, like a cable in EXCITER); "
                   "false = only the string is plucked, the oscillator keeps sounding"),
+    "reset_bow": (True, "factory reset sets the string mode to bow (stock: pluck), so a reset module drones instead of waiting for notes"),
 }
 RANGES = {"strength": (0.3, 1.0), "gate_ms": (2, 100), "hyst": (0.05, 0.49)}
 TARGETS = ["3.6", "3.7"]
@@ -44,7 +45,7 @@ def _redirect_call(fw, site, expected_target, new_target):
     fw.write(site, code, expect=fw.read(site, 3))
 
 
-def apply(fw, mode, strength, gate_ms, hyst, lpg):
+def apply(fw, mode, strength, gate_ms, hyst, lpg, reset_bow):
     if mode not in ("pluck", "always"):
         raise ValueError("mode must be pluck or always")
     if not 0.3 <= strength <= 1.0:
@@ -158,4 +159,13 @@ def apply(fw, mode, strength, gate_ms, hyst, lpg):
     l32r    {reg}, lit_state
     l32i    {reg}, {reg}, 0         /* effective jack flag */
 """)
+    # 4) factory-reset default of the string mode: bow (0.25) instead of pluck (0.9). The 0.9
+    #    literal is shared, so only this load is redirected.
+    if reset_bow:
+        site, reg = s["modores_default_load"]
+        insn = fw.disasm(site, 3)[0][2]
+        if not insn.startswith(f"l32r\t{reg},"):
+            raise ValueError(f"unexpected instruction at modores_default_load {site:#x}: {insn}")
+        fw.hook(site, expect=fw.read(site, 3), name="strum_reset_bow", literals={"v": 0.25},
+                body=f"    l32r    {reg}, lit_v               /* string mode default: bow */\n")
     fw.tag(("strum" if mode == "pluck" else "strum-always") + ("" if lpg else "-string"))

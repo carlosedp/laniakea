@@ -299,8 +299,20 @@ Example: `led_menus:flash=20,flash_led=1`.
 
 With **nothing in EXCITER** and the ORBITS-menu **EFFECTS on pluck** (> 50 %), every **new note**
 strikes the module as if a trigger had been patched into EXCITER: the LPG opens and decays
-(ORBITS-menu ORBITS = decay) and the string model gets a pluck. Sequence V/OCT (or turn FREQ)
-and it plays plucked notes on its own; with the quantizer, each quantized step is a note.
+and the string model gets a pluck. Sequence V/OCT (or turn FREQ) and it plays plucked notes on
+its own; with the quantizer, each quantized step is a note. In effect it's a built-in VCA (a
+low-pass gate) opened by the notes themselves.
+
+> **Module silent?** With `strum`, **pluck + no EXCITER cable = silence until the next note**.
+> That's the LPG waiting for a note, not a fault. Send notes into V/OCT (or turn FREQ), or switch
+> the ORBITS-menu EFFECTS to **bow** (LED ring: LEDs 1–4 with `led_menus`) for the open drone.
+> A factory reset sets the string mode to bow, so a reset module always drones.
+
+| Control (ORBITS menu) | What it does with `strum`                                                      |
+| --------------------- | ------------------------------------------------------------------------------ |
+| **EFFECTS**           | bow (≤ 50 %): stock open drone · pluck (> 50 %): internal exciter on           |
+| **ORBITS**            | **decay**: how long the LPG stays open after each note (left = short pluck)    |
+| **COLOR**             | how much the LPG also filters as it closes (left = VCA, right = low-pass gate) |
 
 - The LPG is at the output of the **whole voice**, so by default the oscillator is gated too:
   silence between notes, like a trigger into EXCITER on the stock firmware. With
@@ -316,7 +328,8 @@ and it plays plucked notes on its own; with the quantizer, each quantized step i
 Build: `laniakea patcher build recommended quantizer strum`. Options: `mode` (`pluck` default, or
 `always` = whenever EXCITER is empty, whatever bow/pluck), `strength` (strike level 0.3–1.0,
 default 0.8: higher = brighter, like a louder trigger), `gate_ms` (internal trigger length,
-default 10), `hyst` (semitones of hysteresis, default 0.3), `lpg` (default true; false = string only).
+default 10), `hyst` (semitones of hysteresis, default 0.3), `lpg` (default true; false = string
+only), `reset_bow` (default true: factory reset sets the string mode to bow; stock sets pluck).
 
 ## Fix: harsh bow noise (`bow`)
 
