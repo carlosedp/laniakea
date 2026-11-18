@@ -27,7 +27,7 @@ DESCRIPTION = "LED ring: menu tint (SPACE blue / ORBITS amber), bars for amounts
 OPTIONS = {
     "tint": (6, "brightness of the menu tint on unlit LEDs (0-255, 0 = off)"),
     "bright": (50, "brightness of bars / the bank LED (stock dot is ~50)"),
-    "flash": (30, "brightness of the step-cue LED (scale / root / chord change; 0 = off)"),
+    "flash": (70, "brightness of the step-cue LED (scale / root / chord change; 0 = off)"),
     "flash_ms": (150, "length of the step cue in ms"),
     "flash_led": (5, "which LED flashes for a step cue (1-8; 5 = top of the ring)"),
 }

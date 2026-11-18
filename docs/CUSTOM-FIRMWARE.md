@@ -272,7 +272,7 @@ showing the dot.
 
 Build: `laniakea patcher build recommended banks quantizer led_menus`. Options:
 `tint` (menu tint brightness, default 6, 0 = off), `bright` (bars and bank LED, default 50,
-about as bright as the stock dot), `flash` (step-cue brightness, default 30, 0 = off),
+about as bright as the stock dot), `flash` (step-cue brightness, default 70, 0 = off),
 `flash_ms` (default 150), `flash_led` (which LED, 1–8, default 5).
 Example: `led_menus:flash=20,flash_led=1`.
 
