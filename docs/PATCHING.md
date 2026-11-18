@@ -31,6 +31,9 @@ Every write takes `expect=<original bytes>`, so a patch refuses to apply to the 
 
 ## Commands
 
+The examples use Windows syntax. On Linux/macOS use `.venv/bin/python` instead of
+`.venv\Scripts\python.exe` and `./laniakea.sh` instead of `.\laniakea`; everything else is the same.
+
 ```powershell
 $P = ".venv\Scripts\python.exe tools\patcher.py"
 & $P list                                      # patches and options

@@ -33,6 +33,7 @@ tools/ghidra/
 tools/xtensa-esp-elf/
 tools/.downloads/
 tools/install.log
+tools/uv/
 
 # misc
 tests/_*

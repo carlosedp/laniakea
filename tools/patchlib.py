@@ -23,9 +23,12 @@ from __future__ import annotations
 
 import hashlib
 import re
+import shutil
 import struct
 import subprocess
+import sys
 import tempfile
+from functools import lru_cache
 from pathlib import Path
 
 import espimage
@@ -33,7 +36,20 @@ import symbols
 
 ROOT = Path(__file__).resolve().parent.parent
 BIN = ROOT / "tools" / "xtensa-esp-elf" / "bin"
-TOOL = lambda t: str(BIN / f"xtensa-esp32-elf-{t}.exe")  # noqa: E731
+
+
+@lru_cache(maxsize=None)
+def TOOL(name: str) -> str:
+    """Locate an ESP32 binutil (as, ld, objcopy, objdump, nm) on Windows, Linux or macOS:
+    the local toolchain from scripts/install_re_tools.py first, then one on PATH (e.g. ESP-IDF)."""
+    exe = ".exe" if sys.platform == "win32" else ""
+    local = BIN / f"xtensa-esp32-elf-{name}{exe}"
+    if local.exists():
+        return str(local)
+    found = shutil.which(f"xtensa-esp32-elf-{name}")
+    if found:
+        return found
+    raise RuntimeError("Xtensa toolchain not found - run: python scripts/install_re_tools.py --only xtensa")
 
 # Instructions whose encoding depends on their address - can't be copied into a trampoline as-is.
 PC_RELATIVE = re.compile(r"^(l32r|j|call\d+|loop\w*|b\w+|movi\.n?\s+\w+,\s*0x4)")

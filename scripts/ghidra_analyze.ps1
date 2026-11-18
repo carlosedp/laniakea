@@ -17,6 +17,10 @@ try {
     $env:JAVA_HOME = "$r\tools\jdk"   # Ghidra 12 needs JDK 25 (scripts\install_re_tools.py)
     Set-Location "$r\"
     $bin = "$r\firmware\official\laniakea\laniakea_$Version.bin"
+    if (-not (Test-Path $bin)) {
+        # official images are downloaded from Magerit (sha256-checked), not stored in git
+        & "$r\.venv\Scripts\python.exe" "$r\tools\laniakea.py" fetch
+    }
     $elf = "$r\re\ghidra\laniakea_$Version.elf"
     $out = "$r\re\ghidra\$Version"
     & "$r\.venv\Scripts\python.exe" "$r\tools\img2elf.py" $bin $elf

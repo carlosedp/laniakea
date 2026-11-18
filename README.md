@@ -14,23 +14,40 @@ Unofficial tools for the Magerit **Laniakea** eurorack module (ESP32):
 > USB-serial chip, so the ESP32 stays off (no LEDs, esptool can't connect).
 > Connect USB, then switch the rack on.
 
-## Quick start (fresh clone, Windows)
+## Quick start (fresh clone)
+
+**Windows** (PowerShell):
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts\setup.ps1      # 1. Python venv with esptool, pyserial, numpy
 .venv\Scripts\python.exe scripts\install_re_tools.py --only xtensa
-                                                               # 2. Xtensa assembler, needed to build patches (~240 MB)
+                                                               # 2. Xtensa assembler, needed to build patches
 .\laniakea backup                                               # 3. FULL flash dump incl. your calibration (keep it!)
 .venv\Scripts\python.exe tools\patcher.py build recommended     # 4. download official v3.6 + apply patches
 .\laniakea flash "firmware\custom\laniakea_v3.6+Y-effects+leddedupe.bin"   # 5. flash it (calibration is kept)
 ```
 
+**Linux / macOS** (sh):
+
+```sh
+sh scripts/setup.sh                                   # 1. venv (uses uv, python3-venv, or downloads a local uv)
+.venv/bin/python scripts/install_re_tools.py --only xtensa   # 2. Xtensa assembler for your OS/CPU
+./laniakea.sh backup                                  # 3. full flash dump (keep it!)
+.venv/bin/python tools/patcher.py build recommended   # 4. download official v3.6 + apply patches
+./laniakea.sh flash "firmware/custom/laniakea_v3.6+Y-effects+leddedupe.bin"   # 5. flash it
+```
+
+- **Linux:** add yourself to the serial group once and log in again: `sudo usermod -aG dialout $USER` (Arch/Fedora: `uucp`). On Ubuntu, `brltty` can grab CH340 adapters (`sudo apt remove brltty`).
+- **macOS:** the CH340 shows up as `/dev/cu.wchusbserial*` or `/dev/cu.usbserial*` and is detected automatically. Older macOS versions may need WCH's CH34x driver.
+- The wavetable editor needs Chrome, Edge or another Chromium browser (Web Serial) on every OS.
+
 `recommended` = **EFFECTS CV jack → wavetable Y (row)** plus the **fix for the v3.4+ menu
-crackle**. To undo: `.\laniakea flash v3.6` (official), or `.\laniakea restore <backup> --yes`.
+crackle**. To undo: `laniakea flash v3.6` (official), or `laniakea restore <backup> --yes`.
 
 ## Everyday use
 
-`laniakea.cmd` runs `tools\laniakea.py` with the local venv:
+`laniakea.cmd` (Windows) and `./laniakea.sh` (Linux/macOS) run `tools/laniakea.py` with the
+local venv. The examples use the Windows form:
 
 ```powershell
 .\laniakea ports                 # find the module (CH340)
@@ -89,9 +106,9 @@ Output goes to `firmware\custom\`. How patches work and how to write one:
 | Patched builds (`firmware/custom/`) | `tools\patcher.py build …` |
 | Your flash dumps (`firmware/backup/`) | `.\laniakea backup` |
 | Magerit manuals (`docs/manuals/`) | `.\laniakea fetch --manuals` |
-| Ghidra project, decompiled code (`re/ghidra/`) | `scripts\install_re_tools.py` then `scripts\ghidra_analyze.ps1 -Version v3.6` |
+| Ghidra project, decompiled code (`re/ghidra/`) | `scripts/install_re_tools.py` then `scripts\ghidra_analyze.ps1 -Version v3.6` (Windows) or `scripts/ghidra_analyze.sh v3.6` |
 | AKWF waves, built banks (`wavetables/`) | `.\laniakea akwf fetch …`, `.\laniakea bank …` |
-| Toolchains (`.venv`, `tools/jdk`, `tools/ghidra`, `tools/xtensa-esp-elf`) | `scripts\setup.ps1`, `scripts\install_re_tools.py` |
+| Toolchains (`.venv`, `tools/jdk`, `tools/ghidra`, `tools/xtensa-esp-elf`, `tools/uv`) | `scripts/setup.ps1` or `scripts/setup.sh`, then `scripts/install_re_tools.py` |
 
 ## Layout
 
@@ -103,7 +120,7 @@ Output goes to `firmware\custom\`. How patches work and how to write one:
 | `patches/` | one file per patch |
 | `editor/` | wavetable editor (static web app, Web Serial upload) |
 | `re/` | Ghidra scripts, version-diff helpers, ESP32 ROM symbols (Espressif, Apache-2.0) |
-| `scripts/` | setup, RE-tool installer, Ghidra headless/GUI launchers |
+| `scripts/` | setup (`.ps1`/`.sh`), RE-tool installer (Windows/Linux/macOS), Ghidra headless/GUI launchers (`.ps1`/`.sh`) |
 | `tests/` | `node tests/editor_dsp.test.mjs` |
 
 ## Legal

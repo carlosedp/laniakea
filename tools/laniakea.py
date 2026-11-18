@@ -58,8 +58,13 @@ def find_port(explicit: str | None) -> str:
         return explicit
     from serial.tools import list_ports
     hits = [p for p in list_ports.comports() if (p.vid, p.pid) in KNOWN_USB]
+    if sys.platform == "darwin":          # macOS lists each device as /dev/cu.* and /dev/tty.*: use cu
+        cu = [p for p in hits if p.device.startswith("/dev/cu.")]
+        hits = cu or hits
     if not hits:
-        die("no CH340/CP210x/ESP serial port found - is the USB cable connected? (use --port)")
+        hint = (" On Linux, check `ls /dev/ttyUSB*`; on Ubuntu the brltty package can grab CH340 devices"
+                " (sudo apt remove brltty).") if sys.platform.startswith("linux") else ""
+        die("no CH340/CP210x/ESP serial port found - is the USB cable connected? (use --port)" + hint)
     if len(hits) > 1:
         die("several candidate ports: " + ", ".join(p.device for p in hits) + " - pick one with --port")
     return hits[0].device
@@ -71,7 +76,11 @@ def port_busy(port: str) -> bool:
         open_serial(port).close()          # opens without toggling DTR/RTS (no reset)
         return False
     except serial.SerialException as e:
-        return "denied" in str(e).lower() or "busy" in str(e).lower()
+        msg = str(e).lower()
+        if sys.platform.startswith("linux") and "permission denied" in msg:
+            die(f"no permission to open {port}: add yourself to the serial group and log in again:\n"
+                f"    sudo usermod -aG dialout $USER      (Arch/Fedora: group 'uucp')")
+        return "denied" in msg or "busy" in msg
 
 
 def esptool(*args, port: str, baud: int = 115200, check=True) -> subprocess.CompletedProcess:
