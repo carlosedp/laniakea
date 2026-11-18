@@ -131,7 +131,12 @@ def open_serial(port: str, baud=115200, timeout=0.1):
     s.port, s.baudrate, s.timeout = port, baud, timeout
     s.dtr = False
     s.rts = False
-    s.open()
+    try:
+        s.open()
+    except serial.SerialException as e:
+        if "denied" in str(e).lower() or "busy" in str(e).lower():
+            die(f"{port} is in use by another program (wavetable editor tab, serial monitor...). Disconnect/close it and retry.")
+        raise
     return s
 
 

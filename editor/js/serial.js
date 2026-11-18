@@ -38,6 +38,7 @@ export class LaniakeaSerial {
     this.reader = null;
     this.queue = [];
     this.pending = null;
+    this.rxTail = [];
     this.log = log;
     this.onText = null; // console output callback
   }
@@ -72,22 +73,57 @@ export class LaniakeaSerial {
   }
 
   async write(data) {
+    this.rxTail = [];
     const w = this.port.writable.getWriter();
     try { await w.write(typeof data === 'string' ? new TextEncoder().encode(data) : data); }
     finally { w.releaseLock(); }
   }
 
-  /** Read one byte with timeout; keeps a single pending read() across timeouts. */
+  /** Read one byte with timeout; keeps a single pending read() across timeouts.
+   *  When the ESP32 resets (RTS pulse, or Windows asserting RTS on open) the line glitches and
+   *  the browser ends/errors the readable stream; a new one is then available from port.readable,
+   *  so get a fresh reader and keep waiting instead of reporting "no answer". */
   async readByte(timeoutMs) {
     if (this.queue.length) return this.queue.shift();
-    if (!this.pending) this.pending = this.reader.read();
-    const r = await Promise.race([this.pending, sleep(timeoutMs).then(() => 'timeout')]);
-    if (r === 'timeout') return null;
-    this.pending = null;
-    if (r.done || !r.value?.length) return null;
-    this.queue = Array.from(r.value);
-    if (this.onText) this.onText(new TextDecoder().decode(r.value));
-    return this.queue.shift();
+    const t0 = performance.now();
+    let renewals = 0;
+    for (;;) {
+      const left = timeoutMs - (performance.now() - t0);
+      if (left <= 0 || !this.reader) return null;
+      if (!this.pending) this.pending = this.reader.read();
+      let r;
+      try { r = await Promise.race([this.pending, sleep(left).then(() => 'timeout')]); }
+      catch (err) { r = { error: err }; }
+      if (r === 'timeout') return null;
+      this.pending = null;
+      if (r.error || r.done) {
+        if (++renewals > 5 || !(await this.renewReader(r.error))) return null;
+        continue;
+      }
+      if (!r.value?.length) continue;
+      for (const b of r.value) { this.rxTail.push(b); }
+      if (this.rxTail.length > 64) this.rxTail.splice(0, this.rxTail.length - 64);
+      this.queue = Array.from(r.value);
+      if (this.onText) this.onText(new TextDecoder().decode(r.value));
+      return this.queue.shift();
+    }
+  }
+
+  async renewReader(err) {
+    try { this.reader?.releaseLock(); } catch { /* already released */ }
+    this.reader = null;
+    await sleep(30);
+    if (!this.port?.readable) return false;            // closed / unplugged
+    try { this.reader = this.port.readable.getReader(); } catch { return false; }
+    this.log(`(serial stream restarted${err?.message ? `: ${err.message}` : ''})`);
+    return true;
+  }
+
+  /** What arrived since the last command, for error messages. */
+  rxNote() {
+    if (!this.rxTail.length) return ' (nothing received)';
+    const s = this.rxTail.map((b) => (b >= 32 && b < 127 ? String.fromCharCode(b) : `\\x${b.toString(16).padStart(2, '0')}`)).join('');
+    return ` (received: "${s}")`;
   }
 
   /** Collect incoming bytes until done(bytes) returns something non-null, or timeout. */
@@ -139,7 +175,7 @@ export class LaniakeaSerial {
   async selectBank(bank) {
     await this.drain();
     await this.write(`MAG${bank}`);
-    if (!(await this.waitAck(5000))) throw new Error(`Module did not confirm bank ${bank} - flash a firmware with the "banks" patch`);
+    if (!(await this.waitAck(5000))) throw new Error(`Module did not confirm bank ${bank}${this.rxNote()} - is a firmware with the "banks" patch installed?`);
     this.log(`Bank ${bank} selected.`);
   }
 

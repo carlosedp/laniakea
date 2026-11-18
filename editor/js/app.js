@@ -423,7 +423,7 @@ async function syncWithModule() {
   await sleep(300);
   let bank = await serial.queryBank();
   if (!bank) { await sleep(2000); bank = await serial.queryBank(); }   // opening the port may have rebooted it
-  if (!bank) { log('Connected. The module did not report a bank (stock firmware or no banks patch): uploads go to its current bank.'); return; }
+  if (!bank) { log(`Connected. The module did not report a bank${serial.rxNote()}: stock firmware, or a banks build older than MAGB. Uploads go to its current bank.`); return; }
   moduleBank = bank;
   selectedBank = bank;
   saveLink();
