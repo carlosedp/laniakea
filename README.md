@@ -14,6 +14,15 @@ Unofficial tools for the Magerit **Laniakea** eurorack module (ESP32):
 > USB-serial chip, so the ESP32 stays off (no LEDs, esptool can't connect).
 > Connect USB, then switch the rack on.
 
+## In the browser (no install)
+
+**[carlosedp.github.io/laniakea](https://carlosedp.github.io/laniakea/)**: the
+[firmware patcher](https://carlosedp.github.io/laniakea/web/) (download the official firmware, pick
+patches, set their options, build and flash over USB) and the
+[wavetable editor](https://carlosedp.github.io/laniakea/editor/). Desktop Chrome or Edge (Web Serial).
+The patcher runs this repository's Python patch code under Pyodide, and the images are byte-identical
+to the CLI's.
+
 ## Quick start (fresh clone)
 
 **Windows** (PowerShell):
@@ -104,7 +113,9 @@ Each patch is a small Python file in `patches/`. Combine them freely:
 | `_template` | starting point for your own patch |
 
 Output goes to `firmware\custom\`. How patches work and how to write one:
-[docs/PATCHING.md](docs/PATCHING.md). Patching needs only the Xtensa toolchain; Ghidra is optional.
+[docs/PATCHING.md](docs/PATCHING.md). Patches are assembled with Espressif's Xtensa toolchain when it is
+installed, otherwise with the built-in pure-Python assembler (`tools/xtasm.py`, byte-identical output),
+so building works without it. Ghidra is optional.
 
 ## Docs
 
@@ -133,12 +144,14 @@ Output goes to `firmware\custom\`. How patches work and how to write one:
 | --- | --- |
 | `tools/laniakea.py` | CLI: ports, info, backup, settings, fetch, flash, restore, waves, akwf, bank, monitor, editor |
 | `tools/patcher.py`, `patchlib.py`, `symbols.py` | patch CLI, patch API (hooks, code cave, assembler), version-specific addresses |
+| `tools/xtasm.py`, `webpatch.py` | pure-Python Xtensa assembler/disassembler, web patcher entry points |
 | `tools/espimage.py`, `espinfo.py`, `img2elf.py`, `nvs.py` | ESP image parsing / checksums, ELF for Ghidra, NVS settings reader |
 | `patches/` | one file per patch |
+| `index.html`, `web/` | GitHub Pages site: landing page and the in-browser firmware patcher (Pyodide + `tools/webpatch.py`) |
 | `editor/` | wavetable editor (static web app; module access via `tools/editor_bridge.py`, or Web Serial) |
 | `re/` | Ghidra scripts, version-diff helpers, ESP32 ROM symbols (Espressif, Apache-2.0) |
 | `scripts/` | setup (`.ps1`/`.sh`), RE-tool installer (Windows/Linux/macOS), Ghidra headless/GUI launchers (`.ps1`/`.sh`) |
-| `tests/` | `node tests/editor_dsp.test.mjs` |
+| `tests/` | `node tests/editor_dsp.test.mjs`; `python tests/test_xtasm.py` (xtasm vs GNU binutils, needs the toolchain) |
 
 ## Legal
 

@@ -17,6 +17,7 @@ from pathlib import Path
 DESCRIPTION = "Custom chord table (16 chords x 8 voices) for the ORBITS-menu CLUSTER"
 OPTIONS = {"set": ("pro", "pro | stock | path to a chord text file")}
 TARGETS = ["3.6", "3.7"]
+CHOICES = {"set": ["pro", "stock", "custom"]}   # web patcher UI ("custom" = your own chord text)
 
 DETUNE = -0.12  # semitones; Magerit thickens chords with a slightly flat doubled root
 

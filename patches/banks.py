@@ -22,6 +22,7 @@ which snprintf can read byte-wise). The current bank lives in RTC slow memory (0
 DESCRIPTION = "8 wavetable banks on the module; SPACE menu -> EFFECTS selects the bank"
 OPTIONS = {"banks": (8, "number of banks (2..8)")}
 TARGETS = ["3.6", "3.7"]
+RANGES = {"banks": (2, 8)}   # web patcher UI limits (apply() still validates)
 ORDER = 5            # before usability, which must keep the EFFECTS slot's reset default at 0
 
 STATE = 0x50001FC0   # [0] bank currently loaded in RAM (0-based)

@@ -33,6 +33,14 @@ To see what the module runs: `laniakea version` (read-only), or the `App version
 There's no on/off switch inside the module. To change features, **build a new image with
 the patches you want, then flash it**. Leaving a patch out of the build command disables it.
 
+**No install needed:** the [web patcher](https://carlosedp.github.io/laniakea/web/) does all of
+this in the browser: you download the official `.bin` from Magerit's repository and drop it
+on the page; it checks it is an exact v3.6/v3.7 release, lets you tick patches and set their options,
+builds the image and flashes it over Web Serial (desktop Chrome/Edge). It runs the same patch
+files as the CLI and produces byte-identical images.
+
+From the command line:
+
 ```powershell
 # Windows: .\laniakea patcher ...      Linux/macOS/WSL/Git Bash: ./laniakea.sh patcher ...
 .\laniakea patcher list                                             # all patches + options
@@ -50,6 +58,7 @@ Images go to `firmware/custom/`. Flash one of three ways:
 
 | How              | Command / place                                                                         |
 | ---------------- | --------------------------------------------------------------------------------------- |
+| Web patcher      | [carlosedp.github.io/laniakea/web](https://carlosedp.github.io/laniakea/web/) → step 4, _Flash patched firmware_ |
 | CLI              | `.\laniakea flash "firmware\custom\<file>.bin"` (Linux/macOS: `./laniakea.sh flash …`)  |
 | Wavetable editor | `.\laniakea editor` → **Firmware** panel → _Custom .bin…_ → _Flash firmware_            |
 | Back to official | `.\laniakea flash v3.7`, the editor's _Official release_ list, or Magerit's web updater |

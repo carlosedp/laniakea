@@ -20,6 +20,8 @@ OPTIONS = {
     "gain": (0.0, "CV depth; 0 = auto (same rows/volt as X columns); negative inverts"),
 }
 TARGETS = ["3.6", "3.7"]
+CHOICES = {"source": ["effects", "shape", "cluster", "color", "orbits", "space"]}   # web patcher UI
+RANGES = {"gain": (-2, 2)}   # web patcher UI limits (apply() still validates)
 
 
 def apply(fw, source, exclusive, gain):

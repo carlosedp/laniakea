@@ -22,6 +22,7 @@ the end of the flash .text segment; the image checksum and SHA-256 are fixed on 
 from __future__ import annotations
 
 import hashlib
+import os
 import re
 import shutil
 import struct
@@ -33,6 +34,7 @@ from pathlib import Path
 
 import espimage
 import symbols
+import xtasm
 
 ROOT = Path(__file__).resolve().parent.parent
 BIN = ROOT / "tools" / "xtensa-esp-elf" / "bin"
@@ -50,6 +52,19 @@ def TOOL(name: str) -> str:
     if found:
         return found
     raise RuntimeError("Xtensa toolchain not found - run: python scripts/install_re_tools.py --only xtensa")
+
+def backend() -> str:
+    """'gnu' (Espressif's binutils) when installed, else 'py' (tools/xtasm.py, byte-identical
+    for the instructions patches use). Force one with LANIAKEA_ASM=gnu|py."""
+    want = os.environ.get("LANIAKEA_ASM", "")
+    if want in ("gnu", "py"):
+        return want
+    try:
+        TOOL("as")
+        return "gnu"
+    except RuntimeError:
+        return "py"
+
 
 # Instructions whose encoding depends on their address - can't be copied into a trampoline as-is.
 PC_RELATIVE = re.compile(r"^(l32r|j|call\d+|loop\w*|b\w+|movi\.n?\s+\w+,\s*0x4)")
@@ -117,6 +132,11 @@ class Firmware:
     def asm(self, src: str, at: int, defs: dict[str, int] | None = None) -> tuple[bytes, dict[str, int]]:
         """Assemble `src` linked at absolute address `at`. Returns (bytes, symbol table)."""
         defs = dict(defs or {})
+        if backend() == "py":
+            try:
+                return xtasm.assemble(src, at, defs)
+            except xtasm.AsmError as e:
+                raise PatchError(f"assembler error: {e}\n--- source ---\n{src}") from None
         with tempfile.TemporaryDirectory() as td:
             td = Path(td)
             (td / "p.S").write_text('    .section .text, "ax"\n    .begin no-transform\n' + src +
@@ -137,6 +157,8 @@ class Firmware:
     def disasm(self, addr: int, n: int) -> list[tuple[int, str, str]]:
         """Disassemble n bytes at addr -> [(addr, hexbytes, text)]."""
         data = self.read(addr, n)
+        if backend() == "py":
+            return xtasm.disasm(data, addr)
         with tempfile.TemporaryDirectory() as td:
             p = Path(td) / "b.bin"
             p.write_bytes(data)

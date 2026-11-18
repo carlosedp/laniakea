@@ -32,6 +32,7 @@ OPTIONS = {
     "flash_led": (5, "which LED flashes for a step cue (1-8; 5 = top of the ring)"),
 }
 TARGETS = ["3.6", "3.7"]
+RANGES = {"tint": (0, 255), "bright": (0, 255), "flash": (0, 255), "flash_ms": (10, 2000), "flash_led": (1, 8)}   # web patcher UI limits (apply() still validates)
 ORDER = 60           # after banks / quantizer, whose settings it reads from fw.meta
 
 STATE = 0x50001FA0   # [0..8] last step per watch slot (-1 = not seen), [12] cue end (us), [16] magic

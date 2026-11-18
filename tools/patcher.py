@@ -34,7 +34,6 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import espimage  # noqa: E402
 from patchlib import Firmware, PatchError  # noqa: E402
-from laniakea import ensure_official  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 PATCH_DIR = ROOT / "patches"
@@ -103,10 +102,14 @@ def cmd_list(a):
             print(f"    {k}={d if d is not None else '<required>'}   {h}")
 
 
-def cmd_build(a):
-    base = ensure_official(a.base)        # downloaded from Magerit + sha256-checked if missing
-    fw = Firmware(base)
-    specs = [s for spec in a.patches for s in PRESETS.get(spec, [spec])]
+def ensure_official(version):
+    from laniakea import ensure_official as fetch   # lazy: needs pyserial etc., not in the browser
+    return fetch(version)
+
+
+def resolve(spec_list):
+    """Preset/default/duplicate handling for CLI specs -> [(name, module, values)] in apply order."""
+    specs = [s for spec in spec_list for s in PRESETS.get(spec, [spec])]
     # apply default values for patch options if not specified
     specs = [f"{s}:{DEFAULTS[name]}" if ":" not in s and (name := s) in DEFAULTS else s
              for s in specs]
@@ -119,15 +122,19 @@ def cmd_build(a):
             print(f"note: {name} given more than once, using {s!r}")
         merged.pop(name, None)
         merged[name] = s
-    parsed = [parse_spec(s) for s in merged.values()]
+    return order([parse_spec(s) for s in merged.values()])
+
+
+def order(parsed):
     # patches may declare ORDER (default 50) when others depend on them; stable otherwise
-    parsed.sort(key=lambda p: getattr(p[1], "ORDER", 50))
-    # Print the patches / values and order in which patches will be applied
-    print("----------------------------------------")
-    print("Applying patches in the following order:")
+    return sorted(parsed, key=lambda p: getattr(p[1], "ORDER", 50))
+
+
+def apply_all(fw, parsed, log=print):
+    """Apply [(name, module, values)] to `fw`. Raises SystemExit with a readable message."""
+    log("Applying patches in this order:")
     for name, mod, values in parsed:
-        print(f" - {name} (order {getattr(mod, 'ORDER', 50)}) with values {values}")
-    print("----------------------------------------")
+        log(f" - {name} (order {getattr(mod, 'ORDER', 50)}) with values {values}")
     fw.meta["patches"] = [name for name, _m, _v in parsed]     # lets patches coordinate
     for name, mod, values in parsed:
         if fw.version not in mod.TARGETS:
@@ -136,8 +143,18 @@ def cmd_build(a):
             res = mod.apply(fw, **values)
         except (PatchError, ValueError) as e:
             raise SystemExit(f"{name}: {e}")
-        print(f"applied {name} {values}" + (f" -> {res}" if res else ""))
-    out = Path(a.output) if a.output else OUT_DIR / f"laniakea_v{fw.version}+{'+'.join(fw.tags)}.bin"
+        log(f"applied {name} {values}" + (f" -> {res}" if res else ""))
+    return f"laniakea_v{fw.version}+{'+'.join(fw.tags)}.bin"
+
+
+def cmd_build(a):
+    base = ensure_official(a.base)        # downloaded from Magerit + sha256-checked if missing
+    fw = Firmware(base)
+    parsed = resolve(a.patches)
+    print("----------------------------------------")
+    name = apply_all(fw, parsed)
+    print("----------------------------------------")
+    out = Path(a.output) if a.output else OUT_DIR / name
     fw.save(out)
     for line in fw.log:
         print("   ", line)

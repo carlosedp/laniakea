@@ -29,6 +29,7 @@ OPTIONS = {
     "freq_semis": (12.0, "FREQ span in fixed-octave ranges (stock 7; 0 = keep)"),
 }
 TARGETS = ["3.6", "3.7"]
+RANGES = {"space_default": (0, 100), "space_default_freq": (0, 100), "y_top": (0, 0.93), "freq_semis": (0, 24)}   # web patcher UI limits (apply() still validates)
 ORDER = 10          # before cv_to_y, which reads fw.meta["y_scale"]
 
 # Sites (tools/symbols.py): space_default_stores = 7x s32i a8, a2, 0..24 (a8 = 0.75, a2 = SPACE

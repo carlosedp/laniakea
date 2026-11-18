@@ -29,6 +29,20 @@ Other operations:
 
 Every write takes `expect=<original bytes>`, so a patch refuses to apply to the wrong firmware or on top of a conflicting patch.
 
+### Assembler backends and the web patcher
+
+`patchlib` assembles with Espressif's GNU binutils when installed, otherwise with `tools/xtasm.py`, a small
+pure-Python Xtensa assembler/disassembler (force one with `LANIAKEA_ASM=gnu` or `LANIAKEA_ASM=py`).
+xtasm covers the core, FPU and boolean instructions patches use. `python tests/test_xtasm.py` builds many
+patch combinations with both and requires byte-identical images, and compares its disassembly with objdump
+over all of `.flash.text`. If your patch uses an instruction xtasm doesn't know, it says so: add it to
+`tools/xtasm.py` and rerun the test.
+
+The [web patcher](https://carlosedp.github.io/laniakea/web/) runs the same files under Pyodide through
+`tools/webpatch.py`. To show a new patch there, add its name to `WEB_PATCHES` in that file. Its form is
+generated from `DESCRIPTION`, the docstring and `OPTIONS`. An optional `CHOICES = {"option": [...]}`
+turns an option into a drop-down.
+
 ## Commands
 
 The examples use Windows syntax. On Linux/macOS use `.venv/bin/python` instead of
