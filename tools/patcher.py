@@ -38,8 +38,14 @@ OUT_DIR = ROOT / "firmware" / "custom"
 OFFICIAL = ROOT / "firmware" / "official" / "laniakea"
 GHIDRA = ROOT / "re" / "ghidra"
 
+IGNORE = ["_", "diag_", "quiet"] # files in PATCH_DIR to ignore when listing patches
+DEFAULTS = {"cv_to_y": "source=effects",
+            "chords": "set=pro"} # default values for patch options
+
+# Preset groups of patches for convenience
 PRESETS = {
     "recommended": ["usability", "cv_to_y:source=effects", "led_dedupe"],
+    "everything": [p.stem for p in PATCH_DIR.glob("*.py") if not any(p.name.startswith(i) for i in IGNORE)]
 }
 
 
@@ -93,9 +99,18 @@ def cmd_build(a):
     base = ensure_official(a.base)        # downloaded from Magerit + sha256-checked if missing
     fw = Firmware(base)
     specs = [s for spec in a.patches for s in PRESETS.get(spec, [spec])]
+    # apply default values for patch options if not specified
+    specs = [f"{s}:{DEFAULTS[name]}" if ":" not in s and (name := s) in DEFAULTS else s
+             for s in specs]
     parsed = [parse_spec(s) for s in specs]
     # patches may declare ORDER (default 50) when others depend on them; stable otherwise
     parsed.sort(key=lambda p: getattr(p[1], "ORDER", 50))
+    # Print the patches / values and order in which patches will be applied
+    print("----------------------------------------")
+    print("Applying patches in the following order:")
+    for name, mod, values in parsed:
+        print(f" - {name} (order {getattr(mod, 'ORDER', 50)}) with values {values}")
+    print("----------------------------------------")
     fw.meta["patches"] = [name for name, _m, _v in parsed]     # lets patches coordinate
     for name, mod, values in parsed:
         if fw.version not in mod.TARGETS:

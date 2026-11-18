@@ -10,7 +10,7 @@ from the official manual.
     - [Why it "acts weird" or goes silent](#why-it-acts-weird-or-goes-silent)
   - [Signal flow](#signal-flow)
   - [Knobs: all three layers](#knobs-all-three-layers)
-    - [FREQ.](#freq)
+    - [FREQ](#freq)
     - [CLUSTER](#cluster)
     - [SHAPE: the 8 × 8 wavetable](#shape-the-8--8-wavetable)
     - [ORBITS (knob)](#orbits-knob)
@@ -92,7 +92,7 @@ ORBITS for the resonator, EFFECTS for reverb, then SPACE! last.
 | Hiss / noise                                                   | CLUSTER fully left + COLOR fully right = white-noise mode                                                                                                                                                                                            | move CLUSTER back to 12 o'clock                                                  |
 | Muffled / dull                                                 | COLOR left of 12 = low-pass; ORBITS right = resonator; SPACE! amounts on COLOR                                                                                                                                                                       | COLOR 12 o'clock, ORBITS fully left                                              |
 | Pitch off / jumps                                              | something in V/OCT, or factory reset erased the V/OCT calibration                                                                                                                                                                                    | unplug V/OCT, or recalibrate (both buttons 2 s)                                  |
-| Crackling/clacking while a menu is open (firmware v3.4–v3.6) | LED ring interference: the menu display re-sends the LED data every 8 ms (v3.3 didn't). Worst with ORBITS-menu SHAPE fully CW | flash a build with the `led_dedupe` patch, or leave the menu |
+| Crackling/clacking while a menu is open (firmware v3.4–v3.6)   | LED ring interference: the menu display re-sends the LED data every 8 ms (v3.3 didn't). Worst with ORBITS-menu SHAPE fully CW                                                                                                                        | flash a build with the `led_dedupe` patch, or leave the menu                     |
 | Endless drone that won't stop                                  | EFFECTS ≥ 95 % = reverb freeze                                                                                                                                                                                                                       | turn EFFECTS down                                                                |
 
 A factory reset also erases **calibration** (jack detection thresholds and V/OCT).
