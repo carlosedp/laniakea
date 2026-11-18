@@ -26,6 +26,8 @@ OPTIONS = {
     "strength": (0.8, "strike level 0.3..1.0, like the EXCITER voltage (higher = brighter strike)"),
     "gate_ms": (10, "length of the internal trigger pulse in ms"),
     "hyst": (0.3, "pitch hysteresis in semitones before a new note counts (against CV noise)"),
+    "lpg": (True, "true = each note opens the LPG (whole voice plucks, silent in between, like a cable in EXCITER); "
+                  "false = only the string is plucked, the oscillator keeps sounding"),
 }
 RANGES = {"strength": (0.3, 1.0), "gate_ms": (2, 100), "hyst": (0.05, 0.49)}
 TARGETS = ["3.6", "3.7"]
@@ -42,7 +44,7 @@ def _redirect_call(fw, site, expected_target, new_target):
     fw.write(site, code, expect=fw.read(site, 3))
 
 
-def apply(fw, mode, strength, gate_ms, hyst):
+def apply(fw, mode, strength, gate_ms, hyst, lpg):
     if mode not in ("pluck", "always"):
         raise ValueError("mode must be pluck or always")
     if not 0.3 <= strength <= 1.0:
@@ -145,7 +147,10 @@ def apply(fw, mode, strength, gate_ms, hyst):
 """)
 
     # 3) the jack-flag reads: mixer (trigger logic) and audio task (LPG)
-    for key, reg in (("mixer_jack_load", "a4"), ("motor_jack_load", "a8")):
+    #    lpg=false: only the mixer (trigger -> string pluck) sees the virtual cable; the audio task
+    #    still sees "no cable" and holds the LPG open, so the oscillator keeps sounding.
+    sites = [("mixer_jack_load", "a4")] + ([("motor_jack_load", "a8")] if lpg else [])
+    for key, reg in sites:
         site = s[key]
         if fw.disasm(site, 3)[0][2] != f"l8ui\t{reg}, a8, 1":
             raise ValueError(f"unexpected code at {key} {site:#x}")
@@ -153,4 +158,4 @@ def apply(fw, mode, strength, gate_ms, hyst):
     l32r    {reg}, lit_state
     l32i    {reg}, {reg}, 0         /* effective jack flag */
 """)
-    fw.tag("strum" if mode == "pluck" else "strum-always")
+    fw.tag(("strum" if mode == "pluck" else "strum-always") + ("" if lpg else "-string"))

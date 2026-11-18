@@ -302,6 +302,10 @@ strikes the module as if a trigger had been patched into EXCITER: the LPG opens 
 (ORBITS-menu ORBITS = decay) and the string model gets a pluck. Sequence V/OCT (or turn FREQ)
 and it plays plucked notes on its own; with the quantizer, each quantized step is a note.
 
+- The LPG is at the output of the **whole voice**, so by default the oscillator is gated too:
+  silence between notes, like a trigger into EXCITER on the stock firmware. With
+  `strum:lpg=false` only the **string** is plucked and the oscillator keeps sounding (each note
+  also re-triggers the oscillator's grains, as EXCITER does).
 - **Bow** (EFFECTS ≤ 50 %) keeps the stock behaviour: no cable = the open drone.
 - A cable in EXCITER always takes over.
 - For the string sound, turn SHAPE right of ~2 o'clock (the string model fades in from there,
@@ -312,7 +316,7 @@ and it plays plucked notes on its own; with the quantizer, each quantized step i
 Build: `laniakea patcher build recommended quantizer strum`. Options: `mode` (`pluck` default, or
 `always` = whenever EXCITER is empty, whatever bow/pluck), `strength` (strike level 0.3–1.0,
 default 0.8: higher = brighter, like a louder trigger), `gate_ms` (internal trigger length,
-default 10), `hyst` (semitones of hysteresis, default 0.3).
+default 10), `hyst` (semitones of hysteresis, default 0.3), `lpg` (default true; false = string only).
 
 ## Fix: harsh bow noise (`bow`)
 
