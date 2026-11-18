@@ -10,29 +10,62 @@
   <header>
     <h1>Laniakea <span>wavetable editor</span></h1>
     <div class="conn">
+      <span id="module-bank" class="pill off" title="Bank the module is playing (read from the module; needs the banks firmware patch)" hidden></span>
       <span id="conn-status" class="pill off">disconnected</span>
       <button id="btn-connect">Connect</button>
-      <label title="Which bank on the module receives Upload / Restore factory (1-8 needs the banks firmware patch)">to
-        <select id="target-bank">
-          <option value="">current bank</option>
-          <option value="1">bank 1</option><option value="2">bank 2</option><option value="3">bank 3</option><option value="4">bank 4</option>
-          <option value="5">bank 5</option><option value="6">bank 6</option><option value="7">bank 7</option><option value="8">bank 8</option>
-        </select></label>
-      <button id="btn-upload" class="primary" disabled>Upload to module</button>
-      <button id="btn-factory" disabled>Restore factory waves</button>
     </div>
   </header>
 
   <div id="progress" hidden><div id="progress-bar"></div></div>
 
   <main>
-    <section class="panel bank">
+    <!-- 1. Banks: what goes where on the module -->
+    <section class="panel banks wide">
       <div class="panel-head">
-        <h2>Bank <small>8 × 8 — X = SHAPE (+CV), Y = SHAPE in ORBITS menu (+EFFECTS CV with the cv_to_y patch)</small></h2>
+        <h2>Banks <small>8 banks on the module (banks firmware patch). Kept in this browser until you upload</small></h2>
         <div class="tools">
+          <button id="btn-upload-all" class="primary" disabled title="Upload every filled bank to the module (empty banks are left as they are)">Upload all banks to module</button>
+        </div>
+      </div>
+      <div id="bank-tabs" class="bank-tabs" role="tablist" aria-label="Bank"></div>
+      <div class="bank-detail">
+        <canvas id="bank-thumb" width="320" height="96" title="Preview of the selected bank (double-click a bank to open it in the editor)"></canvas>
+        <div class="bank-info">
+          <div id="bank-title" class="bank-title"></div>
+          <div id="bank-status" class="hint"></div>
+          <div class="tools">
+            <button id="btn-store" class="primary" title="Put the waves from the editor below into this bank">Use editor waves</button>
+            <button id="btn-use-factory" title="This bank plays the factory waves built into the firmware">Use factory waves</button>
+            <button id="btn-open" title="Load this bank into the editor below">Open in editor</button>
+            <button id="btn-rename" title="Rename this bank">Rename</button>
+            <button id="btn-clear" title="Forget this bank in the browser (the module is not changed)">Clear</button>
+          </div>
+          <div class="tools">
+            <button id="btn-upload-bank" class="primary" data-needs-module disabled>Upload bank to module</button>
+            <label class="muted" title="Magerit's web page drops every other sample (aliasing). Band-limited resampling is cleaner.">
+              256→128 <select id="resample"><option value="bl">band-limited</option><option value="dec">decimate (Magerit)</option></select>
+            </label>
+          </div>
+        </div>
+      </div>
+      <div class="module-row">
+        <span class="muted">Module plays</span>
+        <div id="switch-tabs" class="switch-tabs"></div>
+        <button id="btn-read" data-needs-module disabled title="Load the waves the module is playing into the editor">Read bank from module</button>
+      </div>
+      <p class="hint">Workflow: load or draw a bank in the editor → pick a bank number → <b>Use editor waves</b> → <b>Upload</b>.
+        The buttons under <i>Module plays</i> switch the module's bank. On the module itself: SPACE menu → EFFECTS (the LED dot shows the bank number).</p>
+    </section>
+
+    <!-- 2. Editor: the 64 waves of one bank -->
+    <section class="panel editor wide">
+      <div class="panel-head">
+        <h2>Editor <small id="editor-status"></small></h2>
+        <div class="tools">
+          <button id="btn-save-back" class="primary" hidden>Save to bank</button>
           <label class="btn">Load bank .wav<input id="file-bank" type="file" accept=".wav" hidden></label>
           <label class="btn" title="Single-cycle WAVs (AKWF, Serum/Vital single cycles...) are placed from the selected slot onwards">Import single cycles<input id="file-cycles" type="file" accept=".wav" multiple hidden></label>
-          <button id="btn-export">Export .wav</button>
+          <button id="btn-factory-bank" title="Download Magerit's official v3.6 and load its built-in factory waves">Load factory waves</button>
           <select id="preset-bank" title="Generate a complete bank">
             <option value="">New bank…</option>
             <option value="classic">Classic shapes morph</option>
@@ -43,48 +76,53 @@
             <option value="formant">Formant / vowel</option>
             <option value="fold">Wavefolder sine → chaos</option>
           </select>
+          <button id="btn-export">Export .wav</button>
         </div>
       </div>
-      <div id="grid" class="grid" tabindex="0"></div>
-      <p class="hint">Click to select, Shift+click to select a range. Drop .wav files onto a cell (single cycle) or onto the grid (bank). Ctrl+C / Ctrl+V copy-paste waves, Ctrl+Z / Ctrl+Y undo-redo.</p>
-      <div class="tools">
-        <button id="btn-fill-row" title="Interpolate between the first and last wave of the selected row">Interpolate row</button>
-        <button id="btn-fill-col" title="Interpolate between the first and last wave of the selected column">Interpolate column</button>
-        <button id="btn-fill-sel" title="Interpolate across the selected range">Interpolate selection</button>
-        <button id="btn-norm-all">Normalize all</button>
+      <div class="editor-body">
+        <div class="editor-grid">
+          <h3>Waves <small>8 × 8. X = SHAPE (+CV), Y = SHAPE in the ORBITS menu (+EFFECTS CV with cv_to_y)</small></h3>
+          <div id="grid" class="grid" tabindex="0"></div>
+          <div class="tools">
+            <button id="btn-fill-row" title="Interpolate between the first and last wave of the selected row">Interpolate row</button>
+            <button id="btn-fill-col" title="Interpolate between the first and last wave of the selected column">Interpolate column</button>
+            <button id="btn-fill-sel" title="Interpolate across the selected range">Interpolate selection</button>
+            <button id="btn-norm-all">Normalize all</button>
+          </div>
+          <p class="hint">Click to select, Shift+click for a range. Drop a bank .wav onto the grid, or single cycles onto a cell.
+            Ctrl+C / Ctrl+V copy-paste waves, Ctrl+Z / Ctrl+Y undo-redo.</p>
+        </div>
+        <div class="editor-wave">
+          <h3>Wave <span id="wave-label">1</span> <small>draw with the mouse</small></h3>
+          <canvas id="wave-canvas" width="800" height="300"></canvas>
+          <div class="tools">
+            <select id="gen-type">
+              <option value="sine">Sine</option><option value="triangle">Triangle</option><option value="saw">Saw</option>
+              <option value="square">Square</option><option value="pulse">Pulse</option><option value="fm">FM</option>
+              <option value="sync">Sync</option><option value="formant">Formant</option><option value="noise">Noise</option>
+            </select>
+            <input id="gen-param" type="range" min="0" max="1" step="0.01" value="0.5" title="Generator parameter">
+            <button id="btn-gen">Generate</button>
+          </div>
+          <div class="tools">
+            <button data-op="normalize">Normalize</button>
+            <button data-op="invert">Invert</button>
+            <button data-op="reverse">Reverse</button>
+            <button data-op="smooth">Smooth</button>
+            <button data-op="fold">Fold</button>
+            <button data-op="clip">Saturate</button>
+            <button data-op="shift">Phase +90°</button>
+            <button data-op="bandlimit">Band-limit (as module)</button>
+          </div>
+          <h3>Harmonics <small>click/drag bars to edit (resynthesizes the wave)</small></h3>
+          <canvas id="harm-canvas" width="800" height="120"></canvas>
+        </div>
       </div>
     </section>
 
-    <section class="panel wave">
-      <div class="panel-head">
-        <h2>Wave <span id="wave-label">1</span></h2>
-        <div class="tools">
-          <select id="gen-type">
-            <option value="sine">Sine</option><option value="triangle">Triangle</option><option value="saw">Saw</option>
-            <option value="square">Square</option><option value="pulse">Pulse</option><option value="fm">FM</option>
-            <option value="sync">Sync</option><option value="formant">Formant</option><option value="noise">Noise</option>
-          </select>
-          <input id="gen-param" type="range" min="0" max="1" step="0.01" value="0.5" title="Generator parameter">
-          <button id="btn-gen">Generate</button>
-        </div>
-      </div>
-      <canvas id="wave-canvas" width="800" height="300" title="Draw with the mouse"></canvas>
-      <div class="tools">
-        <button data-op="normalize">Normalize</button>
-        <button data-op="invert">Invert</button>
-        <button data-op="reverse">Reverse</button>
-        <button data-op="smooth">Smooth</button>
-        <button data-op="fold">Fold</button>
-        <button data-op="clip">Saturate</button>
-        <button data-op="shift">Phase +90°</button>
-        <button data-op="bandlimit">Band-limit (as module)</button>
-      </div>
-      <h3>Harmonics <small>click/drag bars to edit — resynthesizes the wave</small></h3>
-      <canvas id="harm-canvas" width="800" height="120"></canvas>
-    </section>
-
+    <!-- 3. Listen -->
     <section class="panel morph">
-      <div class="panel-head"><h2>Morph preview <small>bilinear X/Y like the module</small></h2></div>
+      <div class="panel-head"><h2>Preview <small>hear the editor's bank, morphed in X/Y like the module</small></h2></div>
       <div class="morph-body">
         <canvas id="xy-pad" width="240" height="240" title="Drag to move X/Y"></canvas>
         <div class="morph-controls">
@@ -94,7 +132,7 @@
           <div class="lfo">
             <label><input id="lfo-x-on" type="checkbox"> LFO → X</label>
             <input id="lfo-x-rate" type="range" min="0.02" max="4" step="0.01" value="0.2" title="X LFO rate (Hz)">
-            <label title="Preview of the shape-cv-xy / shape-cv-y firmware patches: an LFO into SHAPE CV scanning rows"><input id="lfo-y-on" type="checkbox"> LFO → Y</label>
+            <label title="Like an LFO into the EFFECTS CV with the cv_to_y patch"><input id="lfo-y-on" type="checkbox"> LFO → Y</label>
             <input id="lfo-y-rate" type="range" min="0.02" max="4" step="0.01" value="0.13" title="Y LFO rate (Hz)">
           </div>
           <div class="tools">
@@ -107,44 +145,21 @@
     </section>
 
     <section class="panel log">
-      <div class="panel-head">
-        <h2>Module</h2>
-        <div class="tools">
-          <label title="Magerit's web page drops every other sample (aliasing). Band-limited resampling is cleaner.">
-            256→128: <select id="resample"><option value="bl">band-limited</option><option value="dec">decimate (Magerit)</option></select>
-          </label>
-        </div>
-      </div>
+      <div class="panel-head"><h2>Module log</h2></div>
       <pre id="log"></pre>
     </section>
 
-    <section class="panel banks">
+    <section class="panel firmware wide">
       <div class="panel-head">
-        <h2>Banks <small>8 banks on the module (needs the <code>banks</code> firmware patch)</small></h2>
-        <div class="tools">
-          <button id="btn-factory-bank" title="Download Magerit's official v3.6 and load its built-in factory bank into the editor">Load factory bank</button>
-          <button id="btn-upload-all" class="primary" disabled title="Upload every filled slot to the bank with the same number">Upload all to module</button>
-        </div>
-      </div>
-      <div id="bank-list" class="bank-list"></div>
-      <p class="hint">Slots are kept in this browser. <b>Save here</b> stores the editor's current bank in a slot, and <b>Edit</b> loads it back.
-        <b>Upload</b> sends a slot to the bank with the same number; <b>Switch</b> makes the module play that bank.
-        On the module itself: SPACE menu → EFFECTS selects the bank (the LED dot shows the bank number).</p>
-    </section>
-
-    <section class="panel firmware">
-      <div class="panel-head">
-        <h2>Firmware <small>flash official or custom builds. Calibration and settings are kept</small></h2>
+        <h2>Firmware <small>flash official or custom builds. Calibration, settings and banks are kept</small></h2>
       </div>
       <div class="tools">
         <select id="fw-source"><option value="">Loading official versions…</option></select>
         <label class="btn" title="A build from laniakea patcher build (firmware/custom/*.bin)">Custom .bin…<input id="fw-file" type="file" accept=".bin" hidden></label>
-      </div>
-      <p id="fw-info" class="hint">No firmware selected.</p>
-      <div class="tools">
         <button id="btn-backup" title="Download a full 4 MB flash dump (includes your calibration)">Backup flash…</button>
         <button id="btn-flash" class="primary" disabled>Flash firmware</button>
       </div>
+      <p id="fw-info" class="hint">No firmware selected.</p>
       <p class="hint">Back up once before flashing anything. The module must be powered from the rack.
         Custom builds come from <code>laniakea patcher build …</code> (see docs/CUSTOM-FIRMWARE.md).</p>
     </section>

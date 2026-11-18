@@ -160,11 +160,20 @@ The module stores **8 wavetable banks** (64 waves each) instead of one.
 
 **Filling banks from the computer** (no need to touch the module):
 
-- Editor, header: choose **to bank N** next to *Upload to module* / *Restore factory waves*.
-- Editor, **Banks** panel: 8 slots kept in the browser. *Save here* stores the editor's bank,
-  *Edit* loads it back, *Upload* sends a slot to the bank with the same number, *Switch* makes the
-  module play a bank, and **Upload all to module** sends every filled slot. *Load factory bank*
-  pulls the factory waves out of Magerit's official v3.6 as a starting point.
+- **Editor** (`laniakea editor`), **Banks** panel at the top:
+  1. Load or draw a bank in the **Editor** below (drop a bank .wav, *New bank…*, *Load factory waves*…).
+  2. Click a bank number **1–8**, then **Use editor waves in bank N** (or **Use factory waves**).
+  3. **Upload bank N to module**, or fill several and **Upload all banks to module**.
+
+  Banks are kept in the browser until you upload them. *Open in editor* (or double-click a bank)
+  brings a bank back into the editor; the editor's title shows which bank it belongs to, and
+  **Save to bank N** appears when you have unsaved changes. The **Module plays 1–8** buttons
+  switch the module's bank (the green one is playing now).
+
+  On **Connect**, the editor asks the module which bank it plays, selects it, and shows its
+  waves: from the browser if that bank was uploaded from here, otherwise read back from the
+  module. *Read bank from module* does that read on demand (the module stores 128 samples per
+  wave, so read-back waves are the 128-sample versions).
 - CLI:
 
   ```sh
@@ -172,6 +181,8 @@ The module stores **8 wavetable banks** (64 waves each) instead of one.
   laniakea waves banks 1=a.wav 2=b.wav 5=c.wav   # several banks in one go
   laniakea waves select --bank 2                 # make the module play bank 2
   laniakea waves default --bank 4                # factory waves back in bank 4
+  laniakea waves current                         # which bank is the module playing?
+  laniakea waves read -o mine.wav [--bank 3]     # read a bank back from the module
   laniakea factory-waves                         # factory bank as a WAV (to edit)
   ```
 

@@ -9,6 +9,8 @@
   starts out as the factory bank.
 - Wave uploads (editor / `laniakea waves upload`, protocol MAGW) are saved to the bank
   currently loaded on the module; "restore factory waves" (MAGD) resets that bank.
+- Protocol: "MAG1".."MAG8" selects a bank, "MAGB" asks which bank is playing, "MAGR" reads
+  the playing bank's waves back (see docs/WAVETABLES.md).
 - SPACE! no longer reduces the reverb (the SPACE-menu EFFECTS slot is the bank now).
 - Factory reset: the EFFECTS slot resets to 0 (= bank 1), also when combined with `usability`.
 
@@ -188,19 +190,78 @@ def apply(fw, banks):
     callx8  a8                      /* ACK */
     retw
 """)
+    # 9b) "MAGB" -> replies 'B', '1'..'8', ACK : the bank currently loaded (lets tools follow the module)
+    query = fw.add_code(name="bank_query", literals={"state": STATE, "uartw": s["uart_write_bytes"]}, body=f"""
+    entry   a1, 48
+    l32r    a8, lit_state
+    l32i    a9, a8, 0
+    bltui   a9, {banks}, 1f
+    movi    a9, 0
+1:
+    addi    a9, a9, 49              /* '1' + bank */
+    addi    a11, a1, 32
+    movi    a8, 66                  /* 'B' */
+    s8i     a8, a11, 0
+    s8i     a9, a11, 1
+    movi    a8, 6
+    s8i     a8, a11, 2              /* ACK */
+    movi    a10, 0
+    movi    a12, 3
+    l32r    a8, lit_uartw
+    callx8  a8
+    retw
+""")
+    # 9c) "MAGR" -> replies "WAVS" + the playing wavetable (int16[64][128] little-endian, 16 KiB) + ACK
+    dump = fw.add_code(name="bank_dump", literals={
+        "magic": int.from_bytes(b"WAVS", "little"), "ram": s["wavetable_ram"], "size": 64 * 128 * 2,
+        "uartw": s["uart_write_bytes"]}, body="""
+    entry   a1, 48
+    addi    a11, a1, 32
+    l32r    a8, lit_magic
+    s32i    a8, a11, 0
+    movi    a10, 0
+    movi    a12, 4
+    l32r    a8, lit_uartw
+    callx8  a8                      /* "WAVS" */
+    movi    a10, 0
+    l32r    a11, lit_ram
+    l32r    a12, lit_size
+    l32r    a8, lit_uartw
+    callx8  a8                      /* the waves, straight from RAM */
+    addi    a11, a1, 32
+    movi    a8, 6
+    s8i     a8, a11, 0
+    movi    a10, 0
+    movi    a12, 1
+    l32r    a8, lit_uartw
+    callx8  a8                      /* ACK */
+    retw
+""")
     site = s["uart_cmd_d_check"]
     if not fw.disasm(site, 3)[0][2].startswith("movi\ta8, 68"):
         raise ValueError("unexpected code at the MAG command dispatch")
-    fw.hook(site, expect=fw.read(site, 3), name="bank_cmd", literals={"select": select},
+    fw.hook(site, expect=fw.read(site, 3), name="bank_cmd", literals={"select": select, "query": query, "dump": dump},
             defs={"__done": s["uart_cmd_done"]}, body=f"""
     addi    a8, a4, -49             /* a4 = 4th char after "MAG"; '1' -> 0 */
-    bgeui   a8, {banks}, 1f         /* not a bank digit: original 'D' check */
+    bgeui   a8, {banks}, 1f         /* not a bank digit */
     mov     a10, a8
     l32r    a8, lit_select
     callx8  a8
     j       __done                  /* same tail as the 'D' command */
 1:
-    {{orig}}                          /* movi a8, 'D' */
+    movi    a8, 66                  /* 'B': which bank? */
+    bne     a4, a8, 2f
+    l32r    a8, lit_query
+    callx8  a8
+    j       __done
+2:
+    movi    a8, 82                  /* 'R': read the waves */
+    bne     a4, a8, 3f
+    l32r    a8, lit_dump
+    callx8  a8
+    j       __done
+3:
+    {{orig}}                          /* movi a8, 'D' : original 'D' check */
 """)
 
     # 10) MAGD: reload the (now empty) bank right away, so factory waves play without a reboot

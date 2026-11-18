@@ -14,6 +14,8 @@ USB-serial bridge, not the ESP32.
   python tools/laniakea.py waves upload F.wav --bank 3   upload into bank 3 (banks patch)
   python tools/laniakea.py waves banks 1=a.wav 2=b.wav  fill several banks in one go
   python tools/laniakea.py waves select --bank 2      switch the module to bank 2
+  python tools/laniakea.py waves current             which bank is the module playing? (banks patch)
+  python tools/laniakea.py waves read [--bank N] -o F.wav   read a bank back from the module (banks patch)
   python tools/laniakea.py akwf fetch bw_perfectwaves fmsynth   download AKWF single cycles (CC0)
   python tools/laniakea.py bank DIR [DIR...] -o out.wav          build a 64-wave bank from single cycles
   python tools/laniakea.py monitor                   serial console
@@ -435,6 +437,37 @@ def select_bank(s, bank: int) -> None:
         die(f"module did not confirm bank {bank} - is a firmware with the `banks` patch installed?")
 
 
+def query_bank(s, tries=3) -> int | None:
+    """'MAGB' (banks patch) -> 'B', '1'..'8', ACK. Returns the bank playing now, or None."""
+    for _ in range(tries):
+        s.reset_input_buffer()
+        s.write(b"MAGB")
+        buf, t = b"", time.time()
+        while time.time() - t < 0.5:
+            buf += s.read(16)
+            i = buf.find(bytes([ACK]))
+            if i >= 2 and buf[i - 2:i - 1] == b"B" and buf[i - 1:i].isdigit():
+                return int(buf[i - 1:i])
+    return None
+
+
+def read_module_waves(s, tries=2):
+    """'MAGR' (banks patch) -> "WAVS" + int16[64][128] LE + ACK: the waves playing now."""
+    n = WAVES * WAVE_LEN * 2
+    for _ in range(tries):
+        s.reset_input_buffer()
+        s.write(b"MAGR")
+        buf, t = b"", time.time()
+        while time.time() - t < 4.0:
+            buf += s.read(4096)
+            i = buf.find(b"WAVS")
+            if i >= 0 and len(buf) >= i + 4 + n + 1:
+                if buf[i + 4 + n] == ACK:
+                    return np.frombuffer(buf[i + 4:i + 4 + n], dtype="<i2").reshape(WAVES, WAVE_LEN)
+                break                                   # misaligned (log output mixed in?): retry
+    die("module did not send its waves - is a firmware with the `banks` patch installed?")
+
+
 def _send_waves(s, waves, label=""):
     if not handshake(s, b"MAGW"):
         die("module did not ACK 'MAGW' - is it powered from the rack and running Laniakea firmware?")
@@ -468,6 +501,29 @@ def upload_banks(port: str, jobs) -> None:
 
 def cmd_waves(a):
     port = find_port(a.port)
+    if a.action in ("current", "read"):
+        s = open_serial(port)
+        try:
+            time.sleep(0.3)
+            bank = query_bank(s)
+            if bank is None:                  # opening the port may have reset the module: wait for boot
+                time.sleep(2.0)
+                bank = query_bank(s)
+            if bank is None:
+                die("no answer to 'MAGB' - is a firmware with the `banks` patch installed?")
+            if a.bank and a.bank != bank:
+                select_bank(s, a.bank)
+                bank = a.bank
+            if a.action == "current":
+                print(f"module is playing bank {bank}")
+                return
+            raw = read_module_waves(s)
+        finally:
+            s.close()
+        out = Path(a.output or f"module_bank{bank}.wav")
+        write_bank(out, [resample_cycle(w.astype(float) / 32767.0, SRC_WAVE_LEN) for w in raw])
+        print(f"wrote {out}: bank {bank} as stored on the module (64 waves, 128 -> 256 samples)")
+        return
     if a.action in ("default", "select"):
         if a.action == "select" and not a.bank:
             die("waves select needs --bank N (1..8)")
@@ -663,9 +719,10 @@ def main():
     p = sub.add_parser("restore"); p.add_argument("backup"); p.add_argument("--yes", action="store_true")
     p.set_defaults(fn=cmd_restore)
     p = sub.add_parser("waves", help="upload / restore / select wavetable banks")
-    p.add_argument("action", choices=["upload", "default", "select", "banks"])
+    p.add_argument("action", choices=["upload", "default", "select", "banks", "current", "read"])
     p.add_argument("files", nargs="*", help="upload: FILE.wav  |  banks: BANK=FILE.wav ...")
     p.add_argument("--bank", type=int, help="target bank 1..8 (needs the `banks` patch); default: current bank")
+    p.add_argument("-o", "--output", help="read: output .wav (default module_bank<N>.wav)")
     p.add_argument("--decimate", action="store_true", help="drop odd samples like the Magerit web page (default: band-limited resample)")
     p.set_defaults(fn=cmd_waves)
     p = sub.add_parser("akwf", help="list/fetch AKWF single-cycle folders (CC0)")

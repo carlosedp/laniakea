@@ -88,3 +88,24 @@ import { extractFactoryBank } from '../editor/js/fwimage.js';
   if (existsSync(other)) await assert.rejects(extractFactoryBank(new Uint8Array(readFileSync(other))), /unknown firmware version/);
 }
 console.log('factory bank tests: OK');
+
+// ---- banks-patch replies (serial.parseBankReply / parseDump)
+import { parseBankReply, parseDump } from '../editor/js/serial.js';
+{
+  const enc = (s) => Uint8Array.from(s, (c) => c.charCodeAt(0));
+  assert.equal(parseBankReply(Uint8Array.from([...enc('I (123) log B9\n'), 0x42, 0x33, 0x06])), 3);
+  assert.equal(parseBankReply(enc('B3')), null);                        // no ACK yet
+  assert.equal(parseBankReply(Uint8Array.from([0x42, 0x39, 0x06])), null); // not a bank digit
+  const body = new Uint8Array(64 * 128 * 2);
+  const dv = new DataView(body.buffer);
+  for (let w = 0; w < 64; w++) for (let k = 0; k < 128; k++) dv.setInt16((w * 128 + k) * 2, w * 100 - k * 50, true);
+  const msg = Uint8Array.from([...enc('noise'), ...enc('WAVS'), ...body, 0x06]);
+  assert.deepEqual(parseDump(msg.subarray(0, 100)), { need: true });
+  const d = parseDump(msg);
+  assert.equal(d.waves.length, 64);
+  assert.equal(d.waves[5][7], 5 * 100 - 7 * 50);
+  assert.equal(d.waves[63][127], 6300 - 6350);
+  const bad = msg.slice(); bad[bad.length - 1] = 0x41;
+  assert.deepEqual(parseDump(bad), { bad: true });
+}
+console.log('banks protocol parser tests: OK');

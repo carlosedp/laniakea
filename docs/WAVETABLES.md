@@ -59,3 +59,7 @@ Tips for this module's grid:
 5. With the `banks` patch: `MAG1` … `MAG8` selects, saves and loads that bank, then ACKs (allow up
    to ~5 s right after an upload: the module first saves the previous bank). A following `MAGW`
    uploads into it. Commands work at any time; no reset is required.
+6. With the `banks` patch: `MAGB` answers `B`, the bank digit (`1`…`8`), ACK: the bank playing now.
+7. With the `banks` patch: `MAGR` answers `WAVS`, then the playing wavetable as it sits in RAM
+   (int16[64][128], little-endian, row-major = 16384 bytes), then ACK. About 1.5 s at 115200 baud.
+   Check that the byte after the 16384 data bytes is the ACK (log output could otherwise mix in).

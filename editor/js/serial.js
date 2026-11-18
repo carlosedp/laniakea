@@ -2,7 +2,33 @@
 //   reset (RTS pulse, DTR low) -> wait 2 s -> "MAGW" -> ACK(0x06)
 //   64 x '{"W":k,"S":[128 int16]}' each answered by ACK
 //   "MAGD" -> ACK : restore factory wavetable
+// With the "banks" firmware patch (any time, no reset needed):
+//   "MAG1".."MAG8" -> ACK : select + save + load a bank
+//   "MAGB" -> 'B' '1'..'8' ACK : which bank is playing
+//   "MAGR" -> "WAVS" + int16[64][128] little-endian + ACK : the waves playing now
 const ACK = 0x06, NACK = 0x15;
+const DUMP_BYTES = 64 * 128 * 2;
+
+/** Find a MAGB reply in received bytes -> bank 1..8 or null. */
+export function parseBankReply(bytes) {
+  for (let i = 2; i < bytes.length; i++) {
+    if (bytes[i] === ACK && bytes[i - 2] === 0x42 && bytes[i - 1] >= 0x31 && bytes[i - 1] <= 0x38) return bytes[i - 1] - 0x30;
+  }
+  return null;
+}
+
+/** Find a MAGR reply -> {waves: Array(64) of Int16Array(128)} | {need: true} (incomplete) | {bad: true} (misaligned). */
+export function parseDump(bytes) {
+  for (let i = 0; i + 4 <= bytes.length; i++) {
+    if (bytes[i] !== 0x57 || bytes[i + 1] !== 0x41 || bytes[i + 2] !== 0x56 || bytes[i + 3] !== 0x53) continue;  // "WAVS"
+    const start = i + 4;
+    if (bytes.length < start + DUMP_BYTES + 1) return { need: true };
+    if (bytes[start + DUMP_BYTES] !== ACK) return { bad: true };
+    const dv = new DataView(bytes.buffer, bytes.byteOffset + start, DUMP_BYTES);
+    return { waves: Array.from({ length: 64 }, (_, w) => Int16Array.from({ length: 128 }, (_, k) => dv.getInt16((w * 128 + k) * 2, true))) };
+  }
+  return { need: true };
+}
 const FILTERS = [{ usbVendorId: 0x1a86 }, { usbVendorId: 0x10c4 }, { usbVendorId: 0x303a }];
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -64,6 +90,21 @@ export class LaniakeaSerial {
     return this.queue.shift();
   }
 
+  /** Collect incoming bytes until done(bytes) returns something non-null, or timeout. */
+  async collect(done, timeoutMs) {
+    const got = [];
+    const t0 = performance.now();
+    while (performance.now() - t0 < timeoutMs) {
+      const b = await this.readByte(Math.max(1, timeoutMs - (performance.now() - t0)));
+      if (b === null) break;
+      got.push(b);
+      if (this.queue.length) { got.push(...this.queue); this.queue = []; }
+      const r = done(Uint8Array.from(got));
+      if (r !== null && r !== undefined) return r;
+    }
+    return null;
+  }
+
   async drain(ms = 50) { this.queue = []; while ((await this.readByte(ms)) !== null) { this.queue = []; } }
 
   async reset() {
@@ -102,6 +143,36 @@ export class LaniakeaSerial {
     this.log(`Bank ${bank} selected.`);
   }
 
+  /** 'MAGB' (banks patch): bank playing now (1..8), or null (no answer: stock firmware / not booted). */
+  async queryBank(tries = 3) {
+    for (let i = 0; i < tries; i++) {
+      await this.drain(20);
+      await this.write('MAGB');
+      const bank = await this.collect(parseBankReply, 500);
+      if (bank) return bank;
+    }
+    return null;
+  }
+
+  /** 'MAGR' (banks patch): the waves playing now -> Array(64) of Int16Array(128). */
+  async readWaves(onProgress = () => {}) {
+    for (let i = 0; i < 2; i++) {
+      await this.drain(20);
+      await this.write('MAGR');
+      const r = await this.collect((b) => { onProgress(Math.min(1, b.length / DUMP_BYTES)); const d = parseDump(b); return d.need ? null : d; }, 5000);
+      if (r?.waves) return r.waves;
+    }
+    throw new Error('Module did not send its waves - flash a firmware with the "banks" patch');
+  }
+
+  /** Bank commands work at any time with the banks patch; reset only if the module doesn't answer. */
+  async ensureAwake() {
+    if (await this.queryBank(1)) return;
+    this.log('Resetting module...');
+    await this.reset();
+    await sleep(2000);
+  }
+
   async sendWaves(waves, onProgress, label = '') {
     if (!(await this.handshake('MAGW'))) throw new Error('Module did not answer MAGW (powered from the rack? Laniakea firmware running?)');
     for (let k = 0; k < waves.length; k++) {
@@ -116,17 +187,24 @@ export class LaniakeaSerial {
     await this.uploadBanks([{ bank, waves }], onProgress);
   }
 
-  /** jobs: [{bank, waves}]. One reset, then per bank: select + upload. The module saves each bank
-   *  before it reads the next command, so banks never mix. */
+  /** jobs: [{bank, waves} | {bank, factory: true}]. One reset, then per bank: select + upload
+   *  (or restore the factory waves). The module saves each bank before it reads the next
+   *  command, so banks never mix. */
   async uploadBanks(jobs, onProgress = () => {}) {
     this.log('Resetting module...');
     await this.reset();
     await sleep(2000);
     for (let j = 0; j < jobs.length; j++) {
-      const { bank, waves } = jobs[j];
+      const { bank, waves, factory } = jobs[j];
       if (bank) await this.selectBank(bank);
-      await this.sendWaves(waves, (p) => onProgress((j + p) / jobs.length), bank ? ` (bank ${bank})` : '');
-      this.log(bank ? `Bank ${bank} uploaded.` : 'Waves uploaded to the current bank.');
+      if (factory) {
+        if (!(await this.handshake('MAGD'))) throw new Error('Module did not answer MAGD');
+        this.log(`Bank ${bank}: factory waves restored.`);
+      } else {
+        await this.sendWaves(waves, (p) => onProgress((j + p) / jobs.length), bank ? ` (bank ${bank})` : '');
+        this.log(bank ? `Bank ${bank} uploaded.` : 'Waves uploaded to the current bank.');
+      }
+      onProgress((j + 1) / jobs.length);
     }
   }
 
@@ -140,9 +218,7 @@ export class LaniakeaSerial {
   }
 
   async switchBank(bank) {
-    this.log('Resetting module...');
-    await this.reset();
-    await sleep(2000);
+    await this.ensureAwake();
     await this.selectBank(bank);
   }
 }
