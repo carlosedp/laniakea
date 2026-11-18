@@ -39,7 +39,8 @@ sh scripts/setup.sh                                   # 1. venv (uses uv, python
 
 - **Linux:** add yourself to the serial group once and log in again: `sudo usermod -aG dialout $USER` (Arch/Fedora: `uucp`). On Ubuntu, `brltty` can grab CH340 adapters (`sudo apt remove brltty`).
 - **macOS:** the CH340 shows up as `/dev/cu.wchusbserial*` or `/dev/cu.usbserial*` and is detected automatically. Older macOS versions may need WCH's CH34x driver.
-- The wavetable editor needs Chrome, Edge or another Chromium browser (Web Serial) on every OS.
+- The wavetable editor works in any browser when started with `laniakea editor` (the module is reached
+  through that local server). Opened as plain files, it needs Chrome/Edge (Web Serial).
 
 `recommended` = **usability fixes** (sane factory-reset defaults, wider wavetable rows, 12-semitone
 FREQ ranges) + **EFFECTS CV jack → wavetable Y (row)** + the **fix for the v3.4+ menu
@@ -64,7 +65,7 @@ The examples use the Windows form. Everything, including `patcher`, works the sa
 .\laniakea flash v3.6            # official firmware, downloaded if needed (keeps calibration/NVS)
 .\laniakea flash <file.bin>      # a patched build
 .\laniakea restore <dump> --yes  # put an exact flash dump back
-.\laniakea editor                # wavetable editor + firmware updater at http://127.0.0.1:8765 (Chrome/Edge)
+.\laniakea editor                # wavetable editor + firmware updater at http://127.0.0.1:8765 (any browser)
 .\laniakea waves upload <bank.wav> [--bank N]   |   .\laniakea waves default [--bank N]
 .\laniakea waves banks 1=a.wav 2=b.wav          # fill several banks (banks patch)
 .\laniakea waves current   |   .\laniakea waves read -o mine.wav   # module's bank / read it back (banks patch)
@@ -132,7 +133,7 @@ Output goes to `firmware\custom\`. How patches work and how to write one:
 | `tools/patcher.py`, `patchlib.py`, `symbols.py` | patch CLI, patch API (hooks, code cave, assembler), version-specific addresses |
 | `tools/espimage.py`, `espinfo.py`, `img2elf.py`, `nvs.py` | ESP image parsing / checksums, ELF for Ghidra, NVS settings reader |
 | `patches/` | one file per patch |
-| `editor/` | wavetable editor (static web app, Web Serial upload) |
+| `editor/` | wavetable editor (static web app; module access via `tools/editor_bridge.py`, or Web Serial) |
 | `re/` | Ghidra scripts, version-diff helpers, ESP32 ROM symbols (Espressif, Apache-2.0) |
 | `scripts/` | setup (`.ps1`/`.sh`), RE-tool installer (Windows/Linux/macOS), Ghidra headless/GUI launchers (`.ps1`/`.sh`) |
 | `tests/` | `node tests/editor_dsp.test.mjs` |

@@ -1,6 +1,7 @@
 import { WAVES, LEN, parseWavetable, parseSingleCycle, looksLikeBank, encodeWavetable } from './wav.js';
 import * as dsp from './dsp.js';
 import { LaniakeaSerial } from './serial.js';
+import { BridgeSerial } from './bridge.js';
 
 // Wave index layout assumed row-major: index = Y * 8 + X (Y = row / ORBITS-menu SHAPE, X = column / SHAPE).
 const COLS = 8;
@@ -387,7 +388,10 @@ function lfoLoop(t) {
 }
 
 // ------------------------------------------------------------------ module connection
-const serial = new LaniakeaSerial(log);
+// Served by `laniakea editor`: talk to the module through that server (pyserial, any browser).
+// Opened any other way: Web Serial (Chrome/Edge).
+const bridged = await BridgeSerial.available();
+const serial = bridged ? new BridgeSerial(log) : new LaniakeaSerial(log);
 let moduleBank = null;          // bank the module is playing (MAGB), null = unknown / stock firmware
 function setConnected(on) {
   $('conn-status').textContent = on ? 'connected' : 'disconnected';
@@ -452,19 +456,20 @@ $('btn-read').addEventListener('click', () => busy(async () => {
 
 // ------------------------------------------------------------------ firmware updater
 // esptool-js comes from a CDN, so the flasher is loaded lazily: the editor works offline.
-let fwBytes = null, fwReleases = [];
+let fwBytes = null, fwName = 'firmware.bin', fwReleases = [];
 const flasherModule = () => import('./flasher.js');
 async function showFirmware(bytes, label) {
   const { inspectFirmware } = await flasherModule();
   try {
     const info = await inspectFirmware(bytes);
     fwBytes = bytes;
+    fwName = `${label.replace(/\.bin$/i, '').replace(/[^\w.+-]+/g, '_')}.bin`;
     $('fw-info').textContent = `${label}: ${info.project} version "${info.version}", built ${info.date} ${info.time}, ${bytes.length} bytes, checksums OK`;
   } catch (err) {
     fwBytes = null;
     $('fw-info').textContent = `${label}: rejected: ${err.message}`;
   }
-  $('btn-flash').disabled = !fwBytes || !LaniakeaSerial.supported();
+  $('btn-flash').disabled = !fwBytes || !(bridged || LaniakeaSerial.supported());
 }
 async function loadReleases() {
   try {
@@ -493,6 +498,12 @@ $('btn-flash').addEventListener('click', () => {
   if (!fwBytes) return;
   if (!confirm(`Flash this firmware?\n\n${$('fw-info').textContent}\n\nCalibration and settings are kept. Keep the module powered and don't unplug USB until it's done.`)) return;
   busy(async () => {
+    if (bridged) {
+      log('Flashing through the laniakea editor server (~15 s, details in its console)...');
+      await serial.flash(fwBytes, fwName);
+      log('Click Connect again to upload waves.');
+      return;
+    }
     const { flashFirmware } = await flasherModule();
     progress(0);
     await flashFirmware({ port: await takePort(), bytes: fwBytes, log, onProgress: progress });
@@ -500,6 +511,12 @@ $('btn-flash').addEventListener('click', () => {
   });
 });
 $('btn-backup').addEventListener('click', () => busy(async () => {
+  if (bridged) {
+    log('Reading the whole flash through the laniakea editor server (~40 s)...');
+    const path = await serial.backup();
+    log(`Backup saved on this computer: ${path}. Keep it safe: it contains your calibration.`);
+    return;
+  }
   const { backupFlash } = await flasherModule();
   progress(0);
   const { data } = await backupFlash({ port: await takePort(), log, onProgress: progress });
@@ -755,11 +772,13 @@ setXY(0, 0);
 requestAnimationFrame(lfoLoop);
 loadReleases();
 setConnected(false);
-if (!LaniakeaSerial.supported()) {
+if (bridged) {
+  log('Ready (module access through the laniakea editor server). Power the module from the rack, connect USB, then click Connect.');
+} else if (!LaniakeaSerial.supported()) {
   $('btn-connect').disabled = true;
   $('btn-backup').disabled = true;
-  log('Web Serial is not available in this browser - use Chrome or Edge to upload to the module. Editing and export still work.');
+  log('No module access: start the editor with `laniakea editor`, or use Chrome/Edge (Web Serial). Editing and export still work.');
 } else {
-  log('Ready. Power the module from the rack, connect USB, then click Connect.');
+  log('Ready (Web Serial). Power the module from the rack, connect USB, then click Connect. If the module never answers, start the editor with `laniakea editor` instead.');
 }
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { refreshAll(); renderBanks(); });

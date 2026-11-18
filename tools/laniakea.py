@@ -54,9 +54,16 @@ FLASH_BAUD = 460800                # CH340 bridge handles this fine (same as web
 
 
 # --------------------------------------------------------------------------- helpers
+class CliError(SystemExit):
+    """A user-facing error: exits the CLI with status 1; the editor bridge reports .msg instead."""
+    def __init__(self, msg: str):
+        super().__init__(1)
+        self.msg = msg
+
+
 def die(msg: str):
     print(f"error: {msg}", file=sys.stderr)
-    raise SystemExit(1)
+    raise CliError(msg)
 
 
 def find_port(explicit: str | None) -> str:
@@ -458,6 +465,7 @@ def query_bank(s, tries=3) -> int | None:
 
 def read_module_waves(s, tries=2):
     """'MAGR' (banks patch) -> "WAVS" + int16[64][128] LE + ACK: the waves playing now."""
+    import numpy as np
     n = WAVES * WAVE_LEN * 2
     for _ in range(tries):
         s.reset_input_buffer()
@@ -473,7 +481,7 @@ def read_module_waves(s, tries=2):
     die("module did not send its waves - is a firmware with the `banks` patch installed?")
 
 
-def _send_waves(s, waves, label=""):
+def _send_waves(s, waves, label="", progress=None):
     if not handshake(s, b"MAGW"):
         die("module did not ACK 'MAGW' - is it powered from the rack and running Laniakea firmware?")
     for k, w in enumerate(waves):
@@ -481,6 +489,8 @@ def _send_waves(s, waves, label=""):
         if not wait_ack(s):
             die(f"no ACK after wave {k}")
         print(f"\r  {label}wave {k + 1}/{len(waves)}", end="", flush=True)
+        if progress:
+            progress((k + 1) / len(waves))
     print()
 
 
@@ -689,10 +699,11 @@ def cmd_editor(a):
     import http.server
     import functools
     import webbrowser
-    handler = functools.partial(http.server.SimpleHTTPRequestHandler, directory=str(ROOT / "editor"))
+    import editor_bridge                  # serial bridge: the editor uses pyserial/esptool through this server
+    handler = functools.partial(editor_bridge.Handler, directory=str(ROOT / "editor"))
     srv = http.server.ThreadingHTTPServer(("127.0.0.1", a.http_port), handler)
     url = f"http://127.0.0.1:{a.http_port}/"
-    print(f"wavetable editor at {url}  (use Chrome or Edge for Web Serial; Ctrl+C to stop)")
+    print(f"wavetable editor at {url}  (any browser; the module is reached through this server. Ctrl+C to stop)")
     if not a.no_browser:
         webbrowser.open(url)
     try:
