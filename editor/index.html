@@ -3,6 +3,19 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Google Tag Manager: only on the published site (not when the editor runs locally via `laniakea editor`) -->
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    if (location.hostname.endsWith('github.io')) {
+      dataLayer.push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' });
+      gtag('js', new Date());
+      var gtm = document.createElement('script');
+      gtm.async = true;
+      gtm.src = 'https://www.googletagmanager.com/gtm.js?id=GTM-T365MB7L';
+      document.head.appendChild(gtm);
+    }
+  </script>
   <title>Laniakea Wavetable Editor</title>
   <link rel="stylesheet" href="style.css">
 </head>
