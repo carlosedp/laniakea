@@ -3,8 +3,8 @@
   patcher.py list                                    available patches and their options
   patcher.py build PATCH[:opt=val,...] [PATCH...]    apply patches in order -> firmware/custom/
             [--base v3.7] [-o out.bin]
-  patcher.py disasm ADDR [--bytes N]                 disassemble the official image around ADDR
-  patcher.py find TEXT                               search strings -> functions (Ghidra export)
+  patcher.py disasm ADDR [--bytes N] [--base v3.7]   disassemble the official image around ADDR
+  patcher.py find TEXT [--base v3.6]                 search strings -> functions (Ghidra export)
   patcher.py verify FILE.bin                         checksum / SHA-256 / app info
 
 The official base image is downloaded from Magerit's public GitHub (sha256-verified)
@@ -13,6 +13,9 @@ the first time it's needed; it is never stored in this repository.
 Presets:
   recommended   usability cv_to_y:source=effects led_dedupe
                 (sane reset defaults/ranges + EFFECTS jack -> wavetable Y + menu crackle fix)
+  everything    every feature patch (banks, chords set=pro, cv_to_y source=effects, led_dedupe,
+                quantizer, usability); diagnostics and `quiet` are left out
+A patch named twice is applied once; the last spec wins: `recommended cv_to_y:source=orbits`.
 
 Examples:
   patcher.py build recommended
@@ -86,6 +89,10 @@ def parse_spec(spec: str):
 
 
 def cmd_list(a):
+    print("presets:")
+    for k, v in PRESETS.items():
+        print(f"  {k:12s} {' '.join(v)}")
+    print("patches:")
     for p in sorted(PATCH_DIR.glob("*.py")):
         if p.name.startswith("_"):
             continue
@@ -102,7 +109,16 @@ def cmd_build(a):
     # apply default values for patch options if not specified
     specs = [f"{s}:{DEFAULTS[name]}" if ":" not in s and (name := s) in DEFAULTS else s
              for s in specs]
-    parsed = [parse_spec(s) for s in specs]
+    # a patch named twice (e.g. `recommended everything`, or `recommended cv_to_y:source=orbits`)
+    # is applied once; the last spec wins, so explicit options override a preset's
+    merged = {}
+    for s in specs:
+        name = s.partition(":")[0]
+        if name in merged and merged[name] != s:
+            print(f"note: {name} given more than once, using {s!r}")
+        merged.pop(name, None)
+        merged[name] = s
+    parsed = [parse_spec(s) for s in merged.values()]
     # patches may declare ORDER (default 50) when others depend on them; stable otherwise
     parsed.sort(key=lambda p: getattr(p[1], "ORDER", 50))
     # Print the patches / values and order in which patches will be applied
@@ -128,9 +144,10 @@ def cmd_build(a):
     print(f"wrote {out}  ({out.stat().st_size} bytes)  version={info['app']['version']!r}  valid={info['app_ok']}")
 
 
-def function_names():
+def function_names(version: str):
+    """Function starts from the Ghidra export of that version (scripts/ghidra_analyze), if any."""
     names = {}
-    f = GHIDRA / "v3.6" / "functions.txt"
+    f = GHIDRA / f"v{version}" / "functions.txt"
     if f.exists():
         for line in f.read_text().splitlines():
             p = line.split("\t")
@@ -142,19 +159,22 @@ def cmd_disasm(a):
     fw = Firmware(ensure_official(a.base))
     addr = int(a.addr, 0)
     start = addr - a.before
-    funcs = function_names()
+    funcs = function_names(fw.version)
     owner = max((f for f in funcs if f <= addr), default=None)
     if owner is not None:
-        print(f"; inside {funcs[owner][0]} @ {owner:#x}")
+        print(f"; v{fw.version}, inside {funcs[owner][0]} @ {owner:#x}")
+    else:
+        print(f"; v{fw.version} (no Ghidra function list for it: scripts/ghidra_analyze v{fw.version})")
     for ad, hx, text in fw.disasm(start, a.before + a.bytes):
         mark = ">>" if ad == addr else "  "
         print(f"{mark} {ad:08x}: {hx:8s} {text}")
 
 
 def cmd_find(a):
-    f = GHIDRA / "v3.6" / "string_xrefs.txt"
+    f = GHIDRA / a.base / "string_xrefs.txt"
     if not f.exists():
-        raise SystemExit("run scripts/ghidra_analyze.ps1 first")
+        raise SystemExit(f"no Ghidra export for {a.base}: run scripts/ghidra_analyze.ps1 -Version {a.base} "
+                         f"(or scripts/ghidra_analyze.sh {a.base})")
     for line in f.read_text(encoding="utf-8", errors="replace").splitlines():
         if a.text.lower() in line.lower():
             addr, s, fns = (line.split("\t") + ["", ""])[:3]
@@ -176,8 +196,10 @@ def main(argv=None, prog=None):
     b = sub.add_parser("build"); b.add_argument("patches", nargs="+"); b.add_argument("--base", default="v3.7")
     b.add_argument("-o", "--output"); b.set_defaults(fn=cmd_build)
     d = sub.add_parser("disasm"); d.add_argument("addr"); d.add_argument("--bytes", type=int, default=32)
-    d.add_argument("--before", type=int, default=0); d.add_argument("--base", default="v3.6"); d.set_defaults(fn=cmd_disasm)
-    f = sub.add_parser("find"); f.add_argument("text"); f.set_defaults(fn=cmd_find)
+    d.add_argument("--before", type=int, default=0); d.add_argument("--base", default="v3.7"); d.set_defaults(fn=cmd_disasm)
+    f = sub.add_parser("find"); f.add_argument("text"); f.add_argument("--base", default="v3.6",
+                                                                      help="Ghidra export to search (default v3.6)")
+    f.set_defaults(fn=cmd_find)
     v = sub.add_parser("verify"); v.add_argument("file"); v.set_defaults(fn=cmd_verify)
     a = ap.parse_args(argv)
     a.fn(a)

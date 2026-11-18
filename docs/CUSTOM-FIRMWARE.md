@@ -31,6 +31,8 @@ the patches you want, then flash it**. Leaving a patch out of the build command 
 .\laniakea patcher build cv_to_y:source=space,gain=-0.78 led_dedupe
 .\laniakea patcher build recommended quantizer                      # + scale quantizer
 .\laniakea patcher build everything                                 # all patches except diagnostic ones
+.\laniakea patcher build recommended cv_to_y:source=orbits          # a later spec overrides a preset's
+.\laniakea patcher build recommended --base v3.6                    # on the older official v3.6
 ```
 
 Images go to `firmware/custom/`. Flash one of three ways:
