@@ -56,3 +56,12 @@ output { min-width: 3.5em; font-variant-numeric: tabular-nums; color: var(--mute
 #progress { position: sticky; top: 0; height: 4px; background: var(--line); z-index: 2; }
 #progress-bar { height: 100%; width: 0; background: var(--accent); transition: width .1s; }
 @media (max-width: 980px) { main { grid-template-columns: minmax(0, 1fr); padding: 16px; } }
+
+.bank-list { display: grid; gap: 6px; }
+.bank-row { display: grid; grid-template-columns: 4.5em minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--grid-cell); }
+.bank-row .num { font-weight: 600; }
+.bank-row .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); }
+.bank-row .name.filled { color: var(--ink); }
+.bank-row .tools { margin-top: 0; }
+.bank-row button { padding: 3px 8px; font-size: 12px; }
+.conn label { display: flex; gap: 6px; align-items: center; color: var(--muted); }

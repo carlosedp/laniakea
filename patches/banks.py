@@ -134,6 +134,86 @@ def apply(fw, banks):
     s32i    a9, a2, 20              /* EFFECTS slot = bank 1 */
     s32i    a8, a2, 24
 """)
+    # 8) LED ring: in the SPACE menu, turning EFFECTS puts the dot on LED <bank> (bank 1 = LED 1)
+    #    instead of the knob position (stock: 1 + value*6, i.e. LEDs 2..8 only)
+    fw.hook(s["led_value_store"], expect=fw.read(s["led_value_store"], 3), name="bank_led", literals={
+        "menu": s["menu_state"], "amounts": s["space_amounts"], "n": float(banks), "half": 0.5}, body=f"""
+    l32r    a8, lit_menu
+    l32i    a8, a8, 0
+    bnei    a8, 1, 1f               /* only in the SPACE menu */
+    movi    a8, {s["led_knob_id_effects"]}
+    bne     a3, a8, 1f              /* only for the EFFECTS knob */
+    l32r    a8, lit_amounts
+    lsi     f2, a8, 20              /* the value the bank will be loaded from */
+    l32r    a8, lit_n
+    wfr     f3, a8
+    mul.s   f2, f2, f3
+    trunc.s a8, f2, 0
+    movi    a9, {banks - 1}
+    min     a8, a8, a9
+    movi    a9, 0
+    max     a8, a8, a9
+    float.s f1, a8, 0
+    l32r    a8, lit_half
+    wfr     f3, a8
+    add.s   f1, f1, f3              /* dot target = bank + 0.5 -> LED <bank> */
+1:
+    {{orig}}                          /* store the dot target */
+""")
+
+    # 9) protocol: "MAG1".."MAG8" selects the bank remotely (saved + loaded), answered with ACK
+    select = fw.add_code(name="bank_select", literals={
+        "amounts": s["space_amounts"], "invn": 1.0 / banks, "half": 0.5,
+        "save": s["space_save"], "sync": sync, "uartw": s["uart_write_bytes"]}, body="""
+    entry   a1, 48
+    float.s f0, a2, 0               /* idx (0-based) */
+    l32r    a8, lit_half
+    wfr     f1, a8
+    add.s   f0, f0, f1
+    l32r    a8, lit_invn
+    wfr     f1, a8
+    mul.s   f0, f0, f1              /* centre of the bank's zone */
+    l32r    a8, lit_amounts
+    ssi     f0, a8, 20              /* SPACE-menu EFFECTS = bank */
+    l32r    a8, lit_save
+    callx8  a8                      /* persist SPACE amounts (also restored at boot) */
+    l32r    a8, lit_sync
+    callx8  a8                      /* load the bank */
+    addi    a11, a1, 32
+    movi    a8, 6
+    s8i     a8, a11, 0
+    movi    a10, 0
+    movi    a12, 1
+    l32r    a8, lit_uartw
+    callx8  a8                      /* ACK */
+    retw
+""")
+    site = s["uart_cmd_d_check"]
+    if not fw.disasm(site, 3)[0][2].startswith("movi\ta8, 68"):
+        raise ValueError("unexpected code at the MAG command dispatch")
+    fw.hook(site, expect=fw.read(site, 3), name="bank_cmd", literals={"select": select},
+            defs={"__done": s["uart_cmd_done"]}, body=f"""
+    addi    a8, a4, -49             /* a4 = 4th char after "MAG"; '1' -> 0 */
+    bgeui   a8, {banks}, 1f         /* not a bank digit: original 'D' check */
+    mov     a10, a8
+    l32r    a8, lit_select
+    callx8  a8
+    j       __done                  /* same tail as the 'D' command */
+1:
+    {{orig}}                          /* movi a8, 'D' */
+""")
+
+    # 10) MAGD: reload the (now empty) bank right away, so factory waves play without a reboot
+    w_erase = fw.add_code(name="bank_erase_reload", literals={"erase": s["wave_erase"], "loader": s["wave_loader"]},
+                          body="""
+    entry   a1, 32
+    l32r    a8, lit_erase
+    callx8  a8
+    l32r    a8, lit_loader
+    callx8  a8
+    retw
+""")
+    _redirect_call(fw, s["uart_magd_erase_call"], s["wave_erase"], w_erase)
     fw.tag(f"banks{banks}")
 
 

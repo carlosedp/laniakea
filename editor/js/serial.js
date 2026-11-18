@@ -93,25 +93,56 @@ export class LaniakeaSerial {
     return false;
   }
 
-  /** waves: Array(64) of Array(128) int16 */
-  async uploadWaves(waves, onProgress = () => {}) {
-    this.log('Resetting module...');
-    await this.reset();
-    await sleep(2000);
+  /** 'MAG1'..'MAG8' (banks firmware patch): select + save + load a bank. Sent once: the module
+   *  answers after saving and loading (up to ~1 s, longer right after an upload). */
+  async selectBank(bank) {
+    await this.drain();
+    await this.write(`MAG${bank}`);
+    if (!(await this.waitAck(5000))) throw new Error(`Module did not confirm bank ${bank} - flash a firmware with the "banks" patch`);
+    this.log(`Bank ${bank} selected.`);
+  }
+
+  async sendWaves(waves, onProgress, label = '') {
     if (!(await this.handshake('MAGW'))) throw new Error('Module did not answer MAGW (powered from the rack? Laniakea firmware running?)');
     for (let k = 0; k < waves.length; k++) {
       await this.write(`{"W":${k},"S":[${waves[k].join(',')}]}`);
-      if (!(await this.waitAck(2000))) throw new Error(`No ACK after wave ${k}`);
+      if (!(await this.waitAck(2000))) throw new Error(`No ACK after wave ${k}${label}`);
       onProgress((k + 1) / waves.length);
     }
-    this.log('Waves uploaded.');
   }
 
-  async restoreFactory() {
+  /** waves: Array(64) of Array(128) int16. bank: 1..8 or null (= bank currently loaded on the module) */
+  async uploadWaves(waves, onProgress = () => {}, bank = null) {
+    await this.uploadBanks([{ bank, waves }], onProgress);
+  }
+
+  /** jobs: [{bank, waves}]. One reset, then per bank: select + upload. The module saves each bank
+   *  before it reads the next command, so banks never mix. */
+  async uploadBanks(jobs, onProgress = () => {}) {
     this.log('Resetting module...');
     await this.reset();
     await sleep(2000);
+    for (let j = 0; j < jobs.length; j++) {
+      const { bank, waves } = jobs[j];
+      if (bank) await this.selectBank(bank);
+      await this.sendWaves(waves, (p) => onProgress((j + p) / jobs.length), bank ? ` (bank ${bank})` : '');
+      this.log(bank ? `Bank ${bank} uploaded.` : 'Waves uploaded to the current bank.');
+    }
+  }
+
+  async restoreFactory(bank = null) {
+    this.log('Resetting module...');
+    await this.reset();
+    await sleep(2000);
+    if (bank) await this.selectBank(bank);
     if (!(await this.handshake('MAGD'))) throw new Error('Module did not answer MAGD');
-    this.log('Factory wavetable restored.');
+    this.log(bank ? `Factory waves restored in bank ${bank}.` : 'Factory wavetable restored.');
+  }
+
+  async switchBank(bank) {
+    this.log('Resetting module...');
+    await this.reset();
+    await sleep(2000);
+    await this.selectBank(bank);
   }
 }

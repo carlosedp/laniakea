@@ -188,13 +188,15 @@ class Firmware:
         self.log.append(f"cave {name} @ {entry:#x} ({len(code)} bytes)")
         return entry
 
-    def hook(self, addr: int, body: str, expect, literals: dict | None = None, resume: int | None = None, name="hook") -> int:
+    def hook(self, addr: int, body: str, expect, literals: dict | None = None, resume: int | None = None,
+             name="hook", defs: dict | None = None) -> int:
         """Detour execution at `addr`.
 
         The overwritten bytes (`expect`, >= 3 bytes, whole instructions) are replaced by
         `j <trampoline>`. The trampoline runs `body` and then jumps to `resume`
         (default: the instruction right after the overwritten ones). Put `{orig}` in the
         body to execute the original instruction(s) at that point.
+        `defs` = extra absolute symbols for the body (e.g. another place to jump back to).
         Registers you use in `body` must be dead at `addr` - check with `patcher.py disasm`."""
         exp = _hex(expect)
         if len(exp) < 3:
@@ -215,7 +217,7 @@ class Firmware:
         resume = addr + len(exp) if resume is None else resume
         orig = "    .byte " + ",".join(f"{b:#04x}" for b in exp) + "\n"
         tramp = self.add_code(body.replace("{orig}", orig) + "\n    j       __resume\n", literals,
-                              {"__resume": resume}, name=name)
+                              {"__resume": resume, **(defs or {})}, name=name)
         jump, _ = self.asm("    j       __tramp\n", addr, {"__tramp": tramp})
         # Fill the rest of the overwritten region with NOPs (never executed: we jump away and
         # resume after the region). A 1-byte remainder can't hold an instruction - leave it.

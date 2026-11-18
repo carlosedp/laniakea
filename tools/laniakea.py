@@ -11,6 +11,9 @@ USB-serial bridge, not the ESP32.
   python tools/laniakea.py restore BACKUP.bin        write a full flash dump back (incl. NVS)
   python tools/laniakea.py waves upload FILE.wav     upload a 64x256 wavetable (WaveEdit format)
   python tools/laniakea.py waves default             restore the factory wavetable
+  python tools/laniakea.py waves upload F.wav --bank 3   upload into bank 3 (banks patch)
+  python tools/laniakea.py waves banks 1=a.wav 2=b.wav  fill several banks in one go
+  python tools/laniakea.py waves select --bank 2      switch the module to bank 2
   python tools/laniakea.py akwf fetch bw_perfectwaves fmsynth   download AKWF single cycles (CC0)
   python tools/laniakea.py bank DIR [DIR...] -o out.wav          build a 64-wave bank from single cycles
   python tools/laniakea.py monitor                   serial console
@@ -382,6 +385,8 @@ def resample_cycle(x, n: int):
 def read_wavetable(path: Path, decimate=False):
     """Return int16 list[64][128] from a 64x256 (or 64xN) mono WAV."""
     import numpy as np
+    if not path.exists():
+        die(f"{path}: file not found")
     x = decode_wav(path)
     if len(x) % WAVES:
         die(f"{len(x)} samples is not a multiple of 64 waves")
@@ -419,40 +424,81 @@ def wait_ack(s, timeout=2.0) -> bool:
     return False
 
 
-def upload_waves(port: str, waves) -> None:
+def select_bank(s, bank: int) -> None:
+    """'MAG1'..'MAG8' (banks patch): select + save + load a bank on the module. Sent once (not
+    retried) - the module answers after saving and loading, which can take ~0.5-1 s."""
+    if not 1 <= bank <= 8:
+        die("bank must be 1..8")
+    s.reset_input_buffer()
+    s.write(f"MAG{bank}".encode())
+    if not wait_ack(s, timeout=5.0):
+        die(f"module did not confirm bank {bank} - is a firmware with the `banks` patch installed?")
+
+
+def _send_waves(s, waves, label=""):
+    if not handshake(s, b"MAGW"):
+        die("module did not ACK 'MAGW' - is it powered from the rack and running Laniakea firmware?")
+    for k, w in enumerate(waves):
+        s.write(('{"W":%d,"S":[%s]}' % (k, ",".join(map(str, w)))).encode())
+        if not wait_ack(s):
+            die(f"no ACK after wave {k}")
+        print(f"\r  {label}wave {k + 1}/{len(waves)}", end="", flush=True)
+    print()
+
+
+def upload_waves(port: str, waves, bank: int | None = None) -> None:
+    upload_banks(port, [(bank, waves)])
+
+
+def upload_banks(port: str, jobs) -> None:
+    """jobs = [(bank or None, waves), ...]. One reset, then per bank: select (if given) + upload.
+    The module saves each bank before it reads the next command, so they don't mix."""
     s = open_serial(port)
     try:
         hard_reset(s)
         time.sleep(2.0)                       # let the app boot (as the web updater does)
-        if not handshake(s, b"MAGW"):
-            die("module did not ACK 'MAGW' - is it powered from the rack and running Laniakea firmware?")
-        for k, w in enumerate(waves):
-            s.write(('{"W":%d,"S":[%s]}' % (k, ",".join(map(str, w)))).encode())
-            if not wait_ack(s):
-                die(f"no ACK after wave {k}")
-            print(f"\r  wave {k + 1}/{len(waves)}", end="", flush=True)
-        print("\nwaves uploaded.")
+        for bank, waves in jobs:
+            if bank is not None:
+                select_bank(s, bank)
+            _send_waves(s, waves, f"bank {bank}: " if bank else "")
+        print("waves uploaded" + (f" to bank(s) {', '.join(str(b) for b, _ in jobs)}" if jobs[0][0] else "") + ".")
     finally:
         s.close()
 
 
 def cmd_waves(a):
     port = find_port(a.port)
-    if a.action == "default":
+    if a.action in ("default", "select"):
+        if a.action == "select" and not a.bank:
+            die("waves select needs --bank N (1..8)")
         s = open_serial(port)
         try:
             hard_reset(s)
             time.sleep(2.0)
-            if not handshake(s, b"MAGD"):
-                die("module did not ACK 'MAGD'")
-            print("factory wavetable restored.")
+            if a.bank:
+                select_bank(s, a.bank)
+                print(f"bank {a.bank} selected (saved; restored at power-up).")
+            if a.action == "default":
+                if not handshake(s, b"MAGD"):
+                    die("module did not ACK 'MAGD'")
+                print("factory wavetable restored" + (f" in bank {a.bank}." if a.bank else "."))
         finally:
             s.close()
         return
-    if not a.file:
-        die("waves upload needs a .wav file")
-    waves = read_wavetable(Path(a.file), decimate=a.decimate)
-    upload_waves(port, waves)
+    if a.action == "banks":
+        jobs = []
+        for spec in a.files:
+            bank, _, f = spec.partition("=")
+            if not f or not bank.isdigit():
+                die(f"expected BANK=FILE.wav, got {spec!r}")
+            jobs.append((int(bank), read_wavetable(Path(f), decimate=a.decimate)))
+        if not jobs:
+            die("waves banks needs BANK=FILE.wav arguments, e.g. 1=a.wav 2=b.wav")
+        upload_banks(port, jobs)
+        return
+    if len(a.files) != 1:
+        die("waves upload needs exactly one .wav file (use `waves banks 1=a.wav 2=b.wav` for several)")
+    upload_waves(port, read_wavetable(Path(a.files[0]), decimate=a.decimate), a.bank)
 
 
 AKWF_REPO = "KristofferKarlAxelEkstrand/AKWF-FREE"
@@ -616,7 +662,10 @@ def main():
     p.add_argument("--no-backup", action="store_true"); p.set_defaults(fn=cmd_flash)
     p = sub.add_parser("restore"); p.add_argument("backup"); p.add_argument("--yes", action="store_true")
     p.set_defaults(fn=cmd_restore)
-    p = sub.add_parser("waves"); p.add_argument("action", choices=["upload", "default"]); p.add_argument("file", nargs="?")
+    p = sub.add_parser("waves", help="upload / restore / select wavetable banks")
+    p.add_argument("action", choices=["upload", "default", "select", "banks"])
+    p.add_argument("files", nargs="*", help="upload: FILE.wav  |  banks: BANK=FILE.wav ...")
+    p.add_argument("--bank", type=int, help="target bank 1..8 (needs the `banks` patch); default: current bank")
     p.add_argument("--decimate", action="store_true", help="drop odd samples like the Magerit web page (default: band-limited resample)")
     p.set_defaults(fn=cmd_waves)
     p = sub.add_parser("akwf", help="list/fetch AKWF single-cycle folders (CC0)")

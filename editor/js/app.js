@@ -383,6 +383,8 @@ function setConnected(on) {
   $('conn-status').className = `pill ${on ? 'on' : 'off'}`;
   $('btn-connect').textContent = on ? 'Disconnect' : 'Connect';
   $('btn-upload').disabled = !on; $('btn-factory').disabled = !on;
+  $('btn-upload-all').disabled = !on || !library.some(Boolean);
+  document.querySelectorAll('[data-needs-module]').forEach((b) => { b.disabled = !on; });
 }
 $('btn-connect').addEventListener('click', async () => {
   try {
@@ -460,12 +462,93 @@ $('btn-backup').addEventListener('click', () => busy(async () => {
   a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
   log(`Backup saved (${data.length} bytes). Keep it safe: it contains your calibration.`);
 }));
+const targetBank = () => Number($('target-bank').value) || null;   // null = bank currently on the module
+const moduleFormat = (w) => dsp.toModuleFormat(w, { decimate: $('resample').value === 'dec' });
 $('btn-upload').addEventListener('click', () => busy(async () => {
-  const data = dsp.toModuleFormat(waves, { decimate: $('resample').value === 'dec' });
   progress(0);
-  await serial.uploadWaves(data, progress);
+  await serial.uploadWaves(moduleFormat(waves), progress, targetBank());
 }));
-$('btn-factory').addEventListener('click', () => busy(() => serial.restoreFactory()));
+$('btn-factory').addEventListener('click', () => busy(() => serial.restoreFactory(targetBank())));
+
+// ------------------------------------------------------------------ bank library (8 slots, kept in this browser)
+const LIB_KEY = 'laniakea-bank-library-v1';
+function encodeBank(w) {            // 64 x 256 floats -> base64 of int16
+  const i16 = new Int16Array(WAVES * LEN);
+  w.forEach((wave, k) => wave.forEach((v, i) => { i16[k * LEN + i] = Math.max(-32767, Math.min(32767, Math.round(v * 32767))); }));
+  let s = ''; const u8 = new Uint8Array(i16.buffer);
+  for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode(...u8.subarray(i, i + 0x8000));
+  return btoa(s);
+}
+function decodeBank(b64) {
+  const bin = atob(b64); const u8 = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+  const i16 = new Int16Array(u8.buffer);
+  return Array.from({ length: WAVES }, (_, k) => Float32Array.from(i16.subarray(k * LEN, (k + 1) * LEN), (v) => v / 32767));
+}
+function loadLibrary() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(LIB_KEY) || '[]');
+    return Array.from({ length: 8 }, (_, i) => (raw[i] ? { name: raw[i].name, waves: decodeBank(raw[i].data) } : null));
+  } catch { return Array(8).fill(null); }
+}
+function saveLibrary() {
+  try { localStorage.setItem(LIB_KEY, JSON.stringify(library.map((s) => (s ? { name: s.name, data: encodeBank(s.waves) } : null)))); }
+  catch (err) { log(`Could not store the bank library in this browser: ${err.message}`); }
+}
+const library = loadLibrary();
+const copyBank = (w) => w.map((x) => Float32Array.from(x));
+
+function renderBanks() {
+  const list = $('bank-list');
+  list.innerHTML = '';
+  library.forEach((slot, i) => {
+    const n = i + 1;
+    const row = Object.assign(document.createElement('div'), { className: 'bank-row' });
+    row.innerHTML = `<span class="num">Bank ${n}</span><span class="name ${slot ? 'filled' : ''}"></span><span class="tools"></span>`;
+    row.querySelector('.name').textContent = slot ? slot.name : (n === 1 ? 'empty here (module: your current waves)' : 'empty (module plays factory waves)');
+    const tools = row.querySelector('.tools');
+    const btn = (label, title, fn, opts = {}) => {
+      const b = Object.assign(document.createElement('button'), { textContent: label, title });
+      if (opts.module) { b.dataset.needsModule = '1'; b.disabled = !serial.connected; }
+      if (opts.needsSlot && !slot) b.disabled = true;
+      b.addEventListener('click', fn);
+      tools.append(b);
+    };
+    btn('Edit', 'Load this slot into the editor', () => { pushUndo(); waves = copyBank(slot.waves); changed(); log(`Editing bank slot ${n}: ${slot.name}`); }, { needsSlot: true });
+    btn('Save here', "Store the editor's bank in this slot", () => {
+      const name = prompt(`Name for bank ${n}:`, slot ? slot.name : `Bank ${n}`);
+      if (name === null) return;
+      library[i] = { name: name || `Bank ${n}`, waves: copyBank(waves) };
+      saveLibrary(); renderBanks(); setConnected(serial.connected);
+    });
+    btn('Upload', `Upload this slot to bank ${n} on the module`, () => busy(async () => {
+      progress(0); await serial.uploadWaves(moduleFormat(slot.waves), progress, n);
+    }), { module: true, needsSlot: true });
+    btn('Switch', `Make the module play bank ${n}`, () => busy(() => serial.switchBank(n)), { module: true });
+    btn('Clear', 'Remove this slot from the browser library (the module is not changed)', () => {
+      if (!confirm(`Clear slot ${n} (${slot.name}) from this browser? The module keeps its bank.`)) return;
+      library[i] = null; saveLibrary(); renderBanks(); setConnected(serial.connected);
+    }, { needsSlot: true });
+    list.append(row);
+  });
+}
+$('btn-upload-all').addEventListener('click', () => {
+  const jobs = library.map((s, i) => (s ? { bank: i + 1, waves: moduleFormat(s.waves) } : null)).filter(Boolean);
+  if (!jobs.length) return;
+  if (!confirm(`Upload ${jobs.length} bank(s) (${jobs.map((j) => j.bank).join(', ')}) to the module? This overwrites those banks.`)) return;
+  busy(async () => { progress(0); await serial.uploadBanks(jobs, progress); log('All banks uploaded.'); });
+});
+$('btn-factory-bank').addEventListener('click', () => busy(async () => {
+  const { officialReleases, downloadOfficial } = await flasherModule();
+  const { extractFactoryBank } = await import('./fwimage.js');
+  const rel = (await officialReleases()).find((r) => r.version === 'v3.6');
+  if (!rel) throw new Error('official v3.6 not found in Magerit\'s manifest');
+  const factory = await extractFactoryBank(await downloadOfficial(rel, log));
+  pushUndo();
+  waves = factory.map((w) => dsp.resampleCycle(Float32Array.from(w, (v) => v / 32767), LEN));
+  changed();
+  log('Factory bank loaded into the editor (from the official v3.6 firmware).');
+}));
 
 // ------------------------------------------------------------------ init
 function changed() { save(); refreshAll(); }
@@ -480,6 +563,7 @@ refreshAll();
 setXY(0, 0);
 requestAnimationFrame(lfoLoop);
 loadReleases();
+renderBanks();
 if (!LaniakeaSerial.supported()) {
   $('btn-connect').disabled = true;
   $('btn-backup').disabled = true;

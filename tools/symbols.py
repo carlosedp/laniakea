@@ -60,6 +60,18 @@ V3_6 = {
     "effects_space_msub": 0x400E2DEF,  # msub.s f1, f13, f8 : EFFECTS -= SPACE amount * EFFECTS
     "unused_rodata": (0x3F4080C8, 64, b"ESP_ERR_WIFI_TWT_SETUP_TIMEOUT"),  # WiFi error names: never printed
 
+    # ---- LED ring (task FUN_400e12c8)
+    "menu_state": 0x3FFC40B4,          # 0 normal, 1 SPACE menu, 2 ORBITS menu (others: calibration)
+    "led_value_store": 0x400E1666,     # ssi f1, a7, 136 : dot target = 1 + knob*6 ; a3 = knob id code
+    "led_knob_id_effects": 0xC0,       # a3 for EFFECTS (unique in the SPACE menu)
+
+    # ---- UART command task (FUN_400e05fc): "MAG" + 'W' (upload) / 'D' (factory); a4 = 4th char
+    "uart_cmd_d_check": 0x400E0825,    # movi a8, 'D'  (then bne a4, a8, reset)
+    "uart_cmd_done": 0x400E0820,       # common tail: prefix counter = 0, continue loop
+    "uart_write_bytes": 0x400D76A0,    # uart_write_bytes(port, buf, len)
+    "wave_erase": 0x400E4CA0,          # erase the 8 rows (MAGD); does NOT reload RAM
+    "uart_magd_erase_call": 0x400E071B,
+
     # ---- ESP-IDF logging (initialised .data): esp_log default level, 3 = INFO
     "log_level": (0x3FFB0054, "03000000"),
 }

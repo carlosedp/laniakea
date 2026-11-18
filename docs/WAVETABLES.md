@@ -55,4 +55,7 @@ Tips for this module's grid:
 1. Pulse reset (RTS high 150 ms with DTR low), wait 2 s for the app to boot.
 2. Send `MAGW`, expect `0x06` (ACK). Retry up to 5× with a 300 ms timeout.
 3. For k = 0..63 send `{"W":k,"S":[s0,...,s127]}` (int16 values, no spaces) and wait for ACK (2 s timeout; `0x15` = NACK).
-4. `MAGD` + ACK restores the factory bank.
+4. `MAGD` + ACK restores the factory bank (of the current bank, with the `banks` patch).
+5. With the `banks` patch: `MAG1` … `MAG8` selects, saves and loads that bank, then ACKs (allow up
+   to ~5 s right after an upload: the module first saves the previous bank). A following `MAGW`
+   uploads into it. Commands work at any time; no reset is required.

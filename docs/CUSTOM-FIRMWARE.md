@@ -154,12 +154,29 @@ The module stores **8 wavetable banks** (64 waves each) instead of one.
 **Selecting a bank:**
 
 1. Press **SPACE!** to enter the SPACE menu.
-2. Turn **EFFECTS**: 8 zones of 12.5 % each = banks 1–8 (fully CCW = bank 1).
+2. Turn **EFFECTS**: 8 zones of 12.5 % each = banks 1–8 (fully CCW = bank 1). The LED ring shows
+   the bank as a dot: **LED 1 = bank 1 … LED 8 = bank 8**.
 3. Press **SPACE!** again to leave. The bank loads when you leave the menu, and is restored at power-up.
 
-**Filling a bank:** select it on the module, then upload from the editor (*Upload to module*) or
-`laniakea waves upload <bank.wav>`. Uploads always go to the **bank currently loaded on the module**,
-and *Restore factory waves* resets that bank.
+**Filling banks from the computer** (no need to touch the module):
+
+- Editor, header: choose **to bank N** next to *Upload to module* / *Restore factory waves*.
+- Editor, **Banks** panel: 8 slots kept in the browser. *Save here* stores the editor's bank,
+  *Edit* loads it back, *Upload* sends a slot to the bank with the same number, *Switch* makes the
+  module play a bank, and **Upload all to module** sends every filled slot. *Load factory bank*
+  pulls the factory waves out of Magerit's official v3.6 as a starting point.
+- CLI:
+
+  ```sh
+  laniakea waves upload fm.wav --bank 3          # one bank
+  laniakea waves banks 1=a.wav 2=b.wav 5=c.wav   # several banks in one go
+  laniakea waves select --bank 2                 # make the module play bank 2
+  laniakea waves default --bank 4                # factory waves back in bank 4
+  laniakea factory-waves                         # factory bank as a WAV (to edit)
+  ```
+
+Without a bank number, uploads go to the bank currently loaded on the module.
+*Restore factory waves* now also reloads the waves immediately (stock firmware needed a reboot).
 
 | | |
 | --- | --- |

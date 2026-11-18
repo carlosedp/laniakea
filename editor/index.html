@@ -12,7 +12,13 @@
     <div class="conn">
       <span id="conn-status" class="pill off">disconnected</span>
       <button id="btn-connect">Connect</button>
-      <button id="btn-upload" class="primary" disabled title="Uploads to the bank currently loaded on the module (banks patch: pick it in SPACE menu → EFFECTS first)">Upload to module</button>
+      <label title="Which bank on the module receives Upload / Restore factory (1-8 needs the banks firmware patch)">to
+        <select id="target-bank">
+          <option value="">current bank</option>
+          <option value="1">bank 1</option><option value="2">bank 2</option><option value="3">bank 3</option><option value="4">bank 4</option>
+          <option value="5">bank 5</option><option value="6">bank 6</option><option value="7">bank 7</option><option value="8">bank 8</option>
+        </select></label>
+      <button id="btn-upload" class="primary" disabled>Upload to module</button>
       <button id="btn-factory" disabled>Restore factory waves</button>
     </div>
   </header>
@@ -112,13 +118,27 @@
       <pre id="log"></pre>
     </section>
 
+    <section class="panel banks">
+      <div class="panel-head">
+        <h2>Banks <small>8 banks on the module (needs the <code>banks</code> firmware patch)</small></h2>
+        <div class="tools">
+          <button id="btn-factory-bank" title="Download Magerit's official v3.6 and load its built-in factory bank into the editor">Load factory bank</button>
+          <button id="btn-upload-all" class="primary" disabled title="Upload every filled slot to the bank with the same number">Upload all to module</button>
+        </div>
+      </div>
+      <div id="bank-list" class="bank-list"></div>
+      <p class="hint">Slots are kept in this browser. <b>Save here</b> stores the editor's current bank in a slot, and <b>Edit</b> loads it back.
+        <b>Upload</b> sends a slot to the bank with the same number; <b>Switch</b> makes the module play that bank.
+        On the module itself: SPACE menu → EFFECTS selects the bank (the LED dot shows the bank number).</p>
+    </section>
+
     <section class="panel firmware">
       <div class="panel-head">
         <h2>Firmware <small>flash official or custom builds. Calibration and settings are kept</small></h2>
       </div>
       <div class="tools">
         <select id="fw-source"><option value="">Loading official versions…</option></select>
-        <label class="btn" title="A build from tools/patcher.py (firmware/custom/*.bin)">Custom .bin…<input id="fw-file" type="file" accept=".bin" hidden></label>
+        <label class="btn" title="A build from laniakea patcher build (firmware/custom/*.bin)">Custom .bin…<input id="fw-file" type="file" accept=".bin" hidden></label>
       </div>
       <p id="fw-info" class="hint">No firmware selected.</p>
       <div class="tools">
@@ -126,7 +146,7 @@
         <button id="btn-flash" class="primary" disabled>Flash firmware</button>
       </div>
       <p class="hint">Back up once before flashing anything. The module must be powered from the rack.
-        Custom builds come from <code>tools/patcher.py build …</code> (see docs/PATCHING.md).</p>
+        Custom builds come from <code>laniakea patcher build …</code> (see docs/CUSTOM-FIRMWARE.md).</p>
     </section>
   </main>
 

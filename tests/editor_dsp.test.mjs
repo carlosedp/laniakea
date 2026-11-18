@@ -72,3 +72,19 @@ for (const rel of ['official/laniakea/laniakea_v3.6.bin', 'custom/laniakea_v3.6+
 const pro = new URL('official/laniakea_pro/laniakea_pro_v1.0.bin', fwDir);
 if (existsSync(pro)) await assert.rejects(inspectFirmware(new Uint8Array(readFileSync(pro))), /ESP32/);
 console.log('firmware helper tests: OK');
+
+// ---- factory bank extraction (fwimage.extractFactoryBank) vs the Python exporter's source data
+import { extractFactoryBank } from '../editor/js/fwimage.js';
+{
+  const p = new URL('official/laniakea/laniakea_v3.6.bin', fwDir);
+  if (existsSync(p)) {
+    const bank = await extractFactoryBank(new Uint8Array(readFileSync(p)));
+    assert.equal(bank.length, 64); assert.equal(bank[0].length, 128);
+    const peak = Math.max(...bank.flatMap((w) => Array.from(w, Math.abs)));
+    assert.ok(peak > 30000 && peak <= 32767, `factory peak ${peak}`);
+    console.log(`  factory bank extracted: 64 x 128, peak ${peak}`);
+  }
+  const other = new URL('official/laniakea/laniakea_v3.3.bin', fwDir);
+  if (existsSync(other)) await assert.rejects(extractFactoryBank(new Uint8Array(readFileSync(other))), /unknown firmware version/);
+}
+console.log('factory bank tests: OK');

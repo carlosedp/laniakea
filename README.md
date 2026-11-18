@@ -65,7 +65,8 @@ The examples use the Windows form. Everything, including `patcher`, works the sa
 .\laniakea flash <file.bin>      # a patched build
 .\laniakea restore <dump> --yes  # put an exact flash dump back
 .\laniakea editor                # wavetable editor + firmware updater at http://127.0.0.1:8765 (Chrome/Edge)
-.\laniakea waves upload <bank.wav>   |   .\laniakea waves default
+.\laniakea waves upload <bank.wav> [--bank N]   |   .\laniakea waves default [--bank N]
+.\laniakea waves banks 1=a.wav 2=b.wav          # fill several banks (banks patch)
 .\laniakea akwf fetch fmsynth eorgan   # AKWF single cycles (CC0) -> wavetables\akwf\
 .\laniakea bank wavetables\akwf\AKWF_fmsynth -o wavetables\banks\fm.wav
 .\laniakea factory-waves         # export the firmware's factory wavetable -> wavetables\banks\factory_v3.6.wav
