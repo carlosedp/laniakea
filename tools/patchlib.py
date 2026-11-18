@@ -81,6 +81,7 @@ class Firmware:
         self.cave_base = seg.load_addr + seg.length       # first free address after .flash.text
         self.cave = bytearray()
         self.tags: list[str] = []
+        self.meta: dict = {}          # facts shared between patches (e.g. usability's "y_scale")
         self.log: list[str] = []
         self._n = 0
 
@@ -198,6 +199,10 @@ class Firmware:
         exp = _hex(expect)
         if len(exp) < 3:
             raise PatchError("hook needs at least 3 bytes (the size of a `j` instruction)")
+        if not 0x400C2000 <= addr < 0x40C00000:
+            # The cave lives in flash. Code in IRAM (0x4008xxxx) can run while the flash cache is
+            # disabled (e.g. during NVS writes); jumping from there into flash would crash.
+            raise PatchError(f"{addr:#x} is not flash-resident code; hooks are only safe in .flash.text")
         cur = self.read(addr, len(exp))
         if cur != exp:
             raise PatchError(f"unexpected bytes at {addr:#x}: {cur.hex()} (expected {exp.hex()})")

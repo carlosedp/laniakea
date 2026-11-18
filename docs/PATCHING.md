@@ -72,6 +72,8 @@ def apply(fw, amount):
 - It must be **≥ 3 bytes** and cover whole instructions; extend `expect` over 2 instructions if needed.
 - If you use `{orig}`, the overwritten instructions must not be PC-relative (`l32r`, `j`, `call*`, branches). The tool refuses those.
 - Nothing may branch *into* the middle of the overwritten bytes. Hooking a single 3-byte instruction is the safe default.
+- Only hook **flash code** (`0x400D0000` and up). The cave is in flash, and code in IRAM (`0x4008xxxx`) can run while the flash cache is off (during settings saves), so a jump from there into the cave would crash. `fw.hook` refuses such addresses.
+- Constants loaded with `l32r` often come from a **shared literal pool**: don't change the pool value (other code uses it). Redirect that one load instead, as `patches/usability.py` does.
 
 ### 3. Pick scratch registers
 A register is free if, after the hook point, it is **written before it is read** on every path.

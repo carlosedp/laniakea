@@ -24,7 +24,7 @@ powershell -ExecutionPolicy Bypass -File scripts\setup.ps1      # 1. Python venv
                                                                # 2. Xtensa assembler, needed to build patches
 .\laniakea backup                                               # 3. FULL flash dump incl. your calibration (keep it!)
 .\laniakea patcher build recommended                          # 4. download official v3.6 + apply patches
-.\laniakea flash "firmware\custom\laniakea_v3.6+Y-effects+leddedupe.bin"   # 5. flash it (calibration is kept)
+.\laniakea flash "firmware\custom\laniakea_v3.6+usab+Y-effects+leddedupe.bin"   # 5. flash it (calibration is kept)
 ```
 
 **Linux / macOS** (sh):
@@ -34,14 +34,15 @@ sh scripts/setup.sh                                   # 1. venv (uses uv, python
 .venv/bin/python scripts/install_re_tools.py --only xtensa   # 2. Xtensa assembler for your OS/CPU
 ./laniakea.sh backup                                  # 3. full flash dump (keep it!)
 ./laniakea.sh patcher build recommended               # 4. download official v3.6 + apply patches
-./laniakea.sh flash "firmware/custom/laniakea_v3.6+Y-effects+leddedupe.bin"   # 5. flash it
+./laniakea.sh flash "firmware/custom/laniakea_v3.6+usab+Y-effects+leddedupe.bin"   # 5. flash it
 ```
 
 - **Linux:** add yourself to the serial group once and log in again: `sudo usermod -aG dialout $USER` (Arch/Fedora: `uucp`). On Ubuntu, `brltty` can grab CH340 adapters (`sudo apt remove brltty`).
 - **macOS:** the CH340 shows up as `/dev/cu.wchusbserial*` or `/dev/cu.usbserial*` and is detected automatically. Older macOS versions may need WCH's CH34x driver.
 - The wavetable editor needs Chrome, Edge or another Chromium browser (Web Serial) on every OS.
 
-`recommended` = **EFFECTS CV jack → wavetable Y (row)** plus the **fix for the v3.4+ menu
+`recommended` = **usability fixes** (sane factory-reset defaults, wider wavetable rows, 12-semitone
+FREQ ranges) + **EFFECTS CV jack → wavetable Y (row)** + the **fix for the v3.4+ menu
 crackle**. To undo: `laniakea flash v3.6` (official), or `laniakea restore <backup> --yes`.
 
 ## Everyday use
@@ -76,7 +77,7 @@ Each patch is a small Python file in `patches/`. Combine them freely:
 
 ```powershell
 .\laniakea patcher list
-.\laniakea patcher build recommended                                # cv_to_y:source=effects + led_dedupe
+.\laniakea patcher build recommended                                # usability + cv_to_y:source=effects + led_dedupe
 .\laniakea patcher build cv_to_y:source=effects chords:set=pro led_dedupe
 .\laniakea patcher build cv_to_y:source=shape,gain=-0.78            # SHAPE CV scans rows (inverted)
 .\laniakea patcher build chords:set=my_chords.txt                   # your own 16 chords
@@ -86,6 +87,7 @@ Each patch is a small Python file in `patches/`. Combine them freely:
 | Patch | What it does |
 | --- | --- |
 | `cv_to_y` | route a CV jack (`source=effects/space/orbits/...`) to the wavetable Y axis |
+| `usability` | sane factory-reset defaults (SPACE amounts 0), rows spread to 88 % of ORBITS-menu SHAPE, 12-semitone FREQ ranges |
 | `led_dedupe` | **fix**: refresh the LED ring only when it changes (removes the v3.4+ menu crackle) |
 | `chords` | replace the 16 ORBITS-menu chords (Laniakea Pro set, or your own file) |
 | `quantizer` | scale quantizer: SPACE-menu FREQ = scale, SPACE-menu SPACE! = root; FREQ snaps to the scale |

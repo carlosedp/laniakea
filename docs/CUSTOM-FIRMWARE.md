@@ -9,7 +9,7 @@ The patches are chosen when you **build**. Each build is a complete firmware ima
 the image name and version string list its patches:
 
 ```text
-laniakea_v3.6+Y-effects+leddedupe.bin      version "3.6+Y-effects+leddedupe"
+laniakea_v3.6+usab+Y-effects+leddedupe.bin      version "3.6+usab+Y-effects+leddedupe"
 ```
 
 To see what the module runs: `laniakea version` (read-only), or the `App version:` line of
@@ -23,7 +23,7 @@ the patches you want, then flash it**. Leaving a patch out of the build command 
 ```powershell
 # Windows: .\laniakea patcher ...      Linux/macOS/WSL/Git Bash: ./laniakea.sh patcher ...
 .\laniakea patcher list                                             # all patches + options
-.\laniakea patcher build recommended                                # cv_to_y:source=effects + led_dedupe
+.\laniakea patcher build recommended                                # usability + cv_to_y:source=effects + led_dedupe
 .\laniakea patcher build led_dedupe                                 # only the crackle fix (stock Y behaviour)
 .\laniakea patcher build cv_to_y:source=effects led_dedupe chords:set=pro
 .\laniakea patcher build cv_to_y:source=space,gain=-0.78 led_dedupe
@@ -59,7 +59,7 @@ CV reaches it. The patch adds a CV jack to it:
 How to use it (with `source=effects`):
 
 - **The EFFECTS knob still controls reverb and freeze.** Only the EFFECTS *jack* changes job.
-- **Base row:** ORBITS menu → SHAPE. Rows 1–8 use the first ~78 % of that knob's travel. For a full CV sweep, set it fully counter-clockwise (row 1) and send positive CV.
+- **Base row:** ORBITS menu → SHAPE. Rows 1–8 use the first ~88 % of that knob's travel with the `usability` patch (~78 % stock). For a full CV sweep, set it fully counter-clockwise (row 1) and send positive CV.
 - **Bipolar CV** (e.g. an LFO) moves around the base row: set the base to the middle (around 40 %).
 - **Nothing patched** = no change: the jack reads 0.
 - **Clamping:** the CV never pushes Y into the additive oscillator. If you select additive yourself (ORBITS-menu SHAPE ≥ 95 %), the CV is ignored.
@@ -135,8 +135,8 @@ Notes:
 
 - **SPACE! no longer bends pitch**: the SPACE-menu FREQ slot now selects the scale. The SPACE-menu
   SPACE! slot was unused by the stock firmware and is now the root.
-- **After a factory reset**, SPACE-menu FREQ defaults to 75 % (spanish). Turn it fully
-  counter-clockwise to switch the quantizer off.
+- **After a factory reset** the quantizer is off with the `usability` patch (SPACE amounts default
+  to 0). Without it, SPACE-menu FREQ defaults to 75 % (spanish): turn it fully counter-clockwise.
 - **Hysteresis:** 0.12 semitone keeps CV noise from flickering between notes (`hyst=` option).
 - **Your own scale list:** `quantizer:scales=major,minor,dorian,blues` (up to 15; zone 1 is
   always off). Available scales: chromatic, major, minor, harmonic_minor, melodic_minor,
@@ -146,6 +146,20 @@ Notes:
   fit the scale.
 
 Build: `laniakea patcher build recommended quantizer`.
+
+## Usability fixes (`usability`)
+
+Three small changes that remove most of the "why is it silent / weird" moments, especially after a
+factory reset. Each can be turned off on its own.
+
+| Option | Default | Stock behaviour → patched |
+| --- | --- | --- |
+| `space_defaults` | on | After a reset all 7 SPACE amounts were 75 %: with SPACE! down, every parameter (pitch too) ran at 25 %, so the module seemed silent or played sub-bass. Now they default to **0**, so knobs do exactly what they say. Values you set in the SPACE menu are still saved as usual. |
+| `y_top` | 0.88 | ORBITS-menu SHAPE reached row 8 at ~78 %, then nothing changed until the additive oscillator at 95 %. Now the 8 rows spread to **88 %**, leaving a small dead zone before additive. |
+| `freq_semis` | 12 | In the fixed-octave FREQ ranges (ORBITS menu → FREQ), the knob covered only **7** semitones, although the manual says 12. Now it covers **12**. |
+
+Examples: `usability:y_top=0.92` (smaller dead zone), `usability:space_defaults=0` (keep stock defaults).
+`usability` always runs first, and `cv_to_y` follows its row spread automatically.
 
 ## Fix: menu crackle (`led_dedupe`)
 

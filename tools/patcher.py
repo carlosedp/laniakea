@@ -11,7 +11,8 @@ The official base image is downloaded from Magerit's public GitHub (sha256-verif
 the first time it's needed; it is never stored in this repository.
 
 Presets:
-  recommended   cv_to_y:source=effects led_dedupe   (EFFECTS jack -> wavetable Y + menu crackle fix)
+  recommended   usability cv_to_y:source=effects led_dedupe
+                (sane reset defaults/ranges + EFFECTS jack -> wavetable Y + menu crackle fix)
 
 Examples:
   patcher.py build recommended
@@ -38,7 +39,7 @@ OFFICIAL = ROOT / "firmware" / "official" / "laniakea"
 GHIDRA = ROOT / "re" / "ghidra"
 
 PRESETS = {
-    "recommended": ["cv_to_y:source=effects", "led_dedupe"],
+    "recommended": ["usability", "cv_to_y:source=effects", "led_dedupe"],
 }
 
 
@@ -92,8 +93,10 @@ def cmd_build(a):
     base = ensure_official(a.base)        # downloaded from Magerit + sha256-checked if missing
     fw = Firmware(base)
     specs = [s for spec in a.patches for s in PRESETS.get(spec, [spec])]
-    for spec in specs:
-        name, mod, values = parse_spec(spec)
+    parsed = [parse_spec(s) for s in specs]
+    # patches may declare ORDER (default 50) when others depend on them; stable otherwise
+    parsed.sort(key=lambda p: getattr(p[1], "ORDER", 50))
+    for name, mod, values in parsed:
         if fw.version not in mod.TARGETS:
             raise SystemExit(f"{name} supports firmware {mod.TARGETS}, base is {fw.version}")
         try:
