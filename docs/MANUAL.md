@@ -278,6 +278,7 @@ becomes percussive or plucked, and the LPG makes notes.
 - `leddedupe`: fixes the v3.4+ menu crackle.
 - `usab`: factory reset sets the SPACE amounts to 25 % (pitch 0 %) instead of 75 %, the 8 rows spread to 88 % of
   ORBITS-menu SHAPE (instead of 78 %), and fixed-octave FREQ ranges cover 12 semitones (instead of 7).
+- `banks8`: 8 wavetable banks. SPACE menu → EFFECTS picks the bank (8 zones), which loads when you leave the menu. Uploads go to the loaded bank.
 - `quant`: scale quantizer. In the SPACE menu, FREQ picks the scale and SPACE! the root. FREQ snaps to the scale, and SPACE! no longer bends pitch.
 
 Details, options, custom chord files, and how to build and flash: [CUSTOM-FIRMWARE.md](CUSTOM-FIRMWARE.md).

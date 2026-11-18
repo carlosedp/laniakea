@@ -543,6 +543,23 @@ def cmd_bank(a):
     print(f"wrote {out} (64 waves x 256 samples, 16-bit) - upload with: waves upload {out}")
 
 
+def cmd_factory_waves(a):
+    """Export the factory wavetable built into an official firmware image as a 64x256 WAV."""
+    import numpy as np
+    import symbols
+    img = ensure_official(a.version)
+    buf = img.read_bytes()
+    entry = symbols.BY_SHA256.get(hashlib.sha256(buf).hexdigest())
+    if not entry:
+        die(f"{img.name}: no known factory-table address for this version (only {', '.join(v for v, _ in symbols.BY_SHA256.values())})")
+    app = espimage.parse_image(buf, espimage.APP_OFFSET)
+    off = app.addr_to_offset(entry[1]["factory_waves"])
+    words = np.frombuffer(buf[off:off + 64 * 128 * 4], "<i4")
+    waves = words.astype(np.int16).reshape(64, 128).astype(float) / 32767.0
+    write_bank(Path(a.output), [resample_cycle(w, SRC_WAVE_LEN) for w in waves])
+    print(f"wrote {a.output}: factory bank of {img.name} (64 waves, upsampled 128 -> 256)")
+
+
 def cmd_monitor(a):
     port = find_port(a.port)
     s = open_serial(port, a.baud)
@@ -608,6 +625,9 @@ def main():
     p = sub.add_parser("bank", help="build a 64-wave bank from single-cycle WAV folders/files")
     p.add_argument("sources", nargs="+", help="1 source = whole grid; 2-8 = one per row")
     p.add_argument("-o", "--output", required=True); p.set_defaults(fn=cmd_bank)
+    p = sub.add_parser("factory-waves", help="export the firmware's built-in factory wavetable as a .wav")
+    p.add_argument("-o", "--output", default=str(WAVETABLES / "banks" / "factory_v3.6.wav"))
+    p.add_argument("--version", default="v3.6"); p.set_defaults(fn=cmd_factory_waves)
     # add_help=False + REMAINDER: everything after `patcher` (incl. -h) goes to the patcher CLI
     p = sub.add_parser("patcher", add_help=False, help="list/build firmware patches (same as tools/patcher.py)")
     p.add_argument("args", nargs=argparse.REMAINDER); p.set_defaults(fn=cmd_patcher)

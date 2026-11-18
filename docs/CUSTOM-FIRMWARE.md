@@ -147,6 +147,33 @@ Notes:
 
 Build: `laniakea patcher build recommended quantizer`.
 
+## Feature: 8 wavetable banks (`banks`)
+
+The module stores **8 wavetable banks** (64 waves each) instead of one.
+
+**Selecting a bank:**
+
+1. Press **SPACE!** to enter the SPACE menu.
+2. Turn **EFFECTS**: 8 zones of 12.5 % each = banks 1–8 (fully CCW = bank 1).
+3. Press **SPACE!** again to leave. The bank loads when you leave the menu, and is restored at power-up.
+
+**Filling a bank:** select it on the module, then upload from the editor (*Upload to module*) or
+`laniakea waves upload <bank.wav>`. Uploads always go to the **bank currently loaded on the module**,
+and *Restore factory waves* resets that bank.
+
+| | |
+| --- | --- |
+| Bank 1 | the stock storage: anything you uploaded before keeps working |
+| Empty banks | play the **factory waves** built into the firmware (`laniakea factory-waves` exports them as a .wav to edit) |
+| Storage | 16 KB per bank in the settings flash (2.1 MB available) |
+| Side effect | SPACE! no longer shortens the reverb (that SPACE-menu slot is the bank selector now) |
+| Factory reset | back to bank 1 (with or without `usability`); the banks' waves are erased like all settings |
+
+If you'd set a SPACE amount for EFFECTS before installing this patch, you may start in another
+bank: set SPACE-menu EFFECTS fully counter-clockwise for bank 1.
+
+Build: `laniakea patcher build recommended banks` (option `banks:banks=4` for fewer, wider zones).
+
 ## Usability fixes (`usability`)
 
 Three small changes that remove most of the "why is it silent / weird" moments, especially after a

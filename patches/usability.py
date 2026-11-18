@@ -54,20 +54,20 @@ def apply(fw, space_default, space_default_freq, y_top, freq_semis):
     if len(insns) != 7 or not all(t.startswith("s32i") and "a8, a2" in t for t in insns):
         raise ValueError(f"unexpected code at SPACE defaults: {insns}")
     # slots (val_1..val_7): +0 FREQ, +4 ORBITS, +8 COLOR, +12 SHAPE, +16 SPACE!, +20 EFFECTS, +24 CLUSTER
+    # Other patches can force slots to 0 (e.g. banks: EFFECTS slot = bank select -> bank 1).
+    zero = {16} | set(fw.meta.get("space_zero_slots", ()))
+    names = {0: "FREQ (pitch / quantizer scale)", 4: "ORBITS", 8: "COLOR", 12: "SHAPE",
+             16: "SPACE! (unused stock / quantizer root)", 20: "EFFECTS", 24: "CLUSTER"}
+    stores = "".join(f"    s32i    {'a9' if o in zero else 'a8'}, a2, {o}   /* {names[o]} */\n"
+                     for o in sorted(names) if o != 0)
     fw.hook(SPACE_DEFAULT_STORES, expect=fw.read(SPACE_DEFAULT_STORES, n), resume=SPACE_DEFAULT_RESUME,
             name="space_defaults", literals={"other": space_default / 100.0, "freq": space_default_freq / 100.0},
-            body="""
+            body=f"""
     l32r    a8, lit_other
     l32r    a9, lit_freq
-    s32i    a9, a2, 0               /* FREQ (pitch / quantizer scale) */
-    s32i    a8, a2, 4               /* ORBITS */
-    s32i    a8, a2, 8               /* COLOR */
-    s32i    a8, a2, 12              /* SHAPE */
-    movi    a9, 0
-    s32i    a9, a2, 16              /* SPACE! slot: unused stock / quantizer root = C */
-    s32i    a8, a2, 20              /* EFFECTS */
-    s32i    a8, a2, 24              /* CLUSTER */
-""")
+    s32i    a9, a2, 0               /* {names[0]} */
+    movi    a9, 0                   /* zero for forced slots (a10..a12 = next call's args: untouched) */
+{stores}""")
     if y_top:
         if not 0.5 <= y_top < 0.94:
             raise ValueError("y_top must be between 0.5 and 0.94 (additive starts at 0.94/0.95)")

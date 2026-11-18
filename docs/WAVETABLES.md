@@ -10,8 +10,8 @@
 | X (column) | SHAPE knob + SHAPE CV → `X = shape * 7` |
 | Y (row) | SHAPE inside the ORBITS menu (`tabla`) → `Y = tabla * 9`, clamped to row 8; `tabla >= 0.95` switches to the additive oscillator |
 | Interpolation | bilinear between the 4 neighbouring waves + linear between samples (no band-limiting, so very bright waves alias at high pitch) |
-| Storage | RAM `0x3ffc40c0` at runtime; uploaded waves persist in NVS keys `onda_0..7` (one blob per row of 8 waves, namespace `storage`) |
-| Factory bank | generated/loaded by firmware (`MAGD` restores it); it is *not* stored as a plain table in the image |
+| Storage | RAM `0x3ffc40c0` at runtime (with the `banks` patch: 8 banks, keys `onda_*`..`ondh_*`); uploaded waves persist in NVS keys `onda_0..7` (one blob per row of 8 waves, namespace `storage`) |
+| Factory bank | stored in the firmware as `int32[8][1024]` at `0x3f4119fc` (low 16 bits used); any row missing from NVS is filled from it. `laniakea factory-waves` exports it as a WAV |
 
 ## Accepted input formats
 

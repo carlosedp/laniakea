@@ -96,6 +96,7 @@ def cmd_build(a):
     parsed = [parse_spec(s) for s in specs]
     # patches may declare ORDER (default 50) when others depend on them; stable otherwise
     parsed.sort(key=lambda p: getattr(p[1], "ORDER", 50))
+    fw.meta["patches"] = [name for name, _m, _v in parsed]     # lets patches coordinate
     for name, mod, values in parsed:
         if fw.version not in mod.TARGETS:
             raise SystemExit(f"{name} supports firmware {mod.TARGETS}, base is {fw.version}")

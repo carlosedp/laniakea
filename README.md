@@ -68,6 +68,7 @@ The examples use the Windows form. Everything, including `patcher`, works the sa
 .\laniakea waves upload <bank.wav>   |   .\laniakea waves default
 .\laniakea akwf fetch fmsynth eorgan   # AKWF single cycles (CC0) -> wavetables\akwf\
 .\laniakea bank wavetables\akwf\AKWF_fmsynth -o wavetables\banks\fm.wav
+.\laniakea factory-waves         # export the firmware's factory wavetable -> wavetablesanksactory_v3.6.wav
 .\laniakea monitor [--reset]     # serial console
 ```
 
@@ -82,6 +83,7 @@ Each patch is a small Python file in `patches/`. Combine them freely:
 .\laniakea patcher build cv_to_y:source=shape,gain=-0.78            # SHAPE CV scans rows (inverted)
 .\laniakea patcher build chords:set=my_chords.txt                   # your own 16 chords
 .\laniakea patcher build recommended quantizer                      # + scale quantizer
+.\laniakea patcher build recommended banks                          # + 8 wavetable banks
 ```
 
 | Patch | What it does |
@@ -90,6 +92,7 @@ Each patch is a small Python file in `patches/`. Combine them freely:
 | `usability` | sane factory-reset defaults (SPACE amounts 25 %, pitch 0 %; adjustable), rows spread to 88 % of ORBITS-menu SHAPE, 12-semitone FREQ ranges |
 | `led_dedupe` | **fix**: refresh the LED ring only when it changes (removes the v3.4+ menu crackle) |
 | `chords` | replace the 16 ORBITS-menu chords (Laniakea Pro set, or your own file) |
+| `banks` | 8 wavetable banks on the module; SPACE menu → EFFECTS selects the bank (loads when leaving the menu) |
 | `quantizer` | scale quantizer: SPACE-menu FREQ = scale, SPACE-menu SPACE! = root; FREQ snaps to the scale |
 | `quiet` | silence serial logging |
 | `diag_guards`, `diag_noled` | diagnostics used to find the crackle (see RE notes) |

@@ -44,6 +44,22 @@ V3_6 = {
     # ---- flash data
     "chord_table": 0x3F40EC34,         # float[16][8] voice frequency ratios
 
+    # ---- wavetable storage (NVS namespace "storage", keys "onda_0".."onda_7" = rows of 8 waves)
+    "wave_key_fmt": 0x3F404674,        # "onda_%d"
+    "wave_key_loads": [(0x400E4355, "a12"),   # load slot  (FUN_400e4338)
+                       (0x400E4B4D, "a12"),   # save slot  (FUN_400e4b2c, used by MAGW upload)
+                       (0x400E4CB8, "a5")],   # erase all  (FUN_400e4ca0, MAGD)
+    "factory_waves": 0x3F4119FC,       # int32[8 rows][1024] = 64 waves x 128 samples (low 16 bits used)
+    "wave_loader": 0x400E4BC0,         # load 8 rows into RAM; missing rows <- factory table (int32[8][1024] @0x3f4119fc)
+    "wave_boot_load_call": 0x400E4C9B, # call8 wave_loader in nvs_inicio (runs BEFORE settings are loaded)
+    "space_load": 0x400E4AB4,          # load SPACE amounts (defaults first) - called at boot
+    "space_load_calls": [0x400E1D22, 0x400E1D70],
+    "space_save": 0x400E4A00,          # save SPACE amounts - called when leaving the SPACE menu
+    "space_save_calls": [0x400E3A96],
+    "space_default_stores": (0x400E4AC6, 0x400E4AD5),   # 7x s32i a8 (=0.75), a2 = space_amounts
+    "effects_space_msub": 0x400E2DEF,  # msub.s f1, f13, f8 : EFFECTS -= SPACE amount * EFFECTS
+    "unused_rodata": (0x3F4080C8, 64, b"ESP_ERR_WIFI_TWT_SETUP_TIMEOUT"),  # WiFi error names: never printed
+
     # ---- ESP-IDF logging (initialised .data): esp_log default level, 3 = INFO
     "log_level": (0x3FFB0054, "03000000"),
 }
