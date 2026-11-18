@@ -68,7 +68,7 @@ The examples use the Windows form. Everything, including `patcher`, works the sa
 .\laniakea waves upload <bank.wav>   |   .\laniakea waves default
 .\laniakea akwf fetch fmsynth eorgan   # AKWF single cycles (CC0) -> wavetables\akwf\
 .\laniakea bank wavetables\akwf\AKWF_fmsynth -o wavetables\banks\fm.wav
-.\laniakea factory-waves         # export the firmware's factory wavetable -> wavetablesanksactory_v3.6.wav
+.\laniakea factory-waves         # export the firmware's factory wavetable -> wavetables\banks\factory_v3.6.wav
 .\laniakea monitor [--reset]     # serial console
 ```
 
