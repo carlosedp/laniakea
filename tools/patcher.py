@@ -47,7 +47,7 @@ DEFAULTS = {"cv_to_y": "source=effects",
 
 # Preset groups of patches for convenience
 PRESETS = {
-    "recommended": ["banks", "usability", "cv_to_y:source=effects", "led_dedupe", "led_menus"],
+    "recommended": ["banks", "usability", "cv_to_y:source=effects", "led_dedupe", "led_menus", "strum"],
     "everything": [p.stem for p in PATCH_DIR.glob("*.py") if not any(p.name.startswith(i) for i in IGNORE)]
 }
 
