@@ -259,17 +259,22 @@ Stock, both menus show the same single dim dot, so it's hard to tell where you a
 | ORBITS menu (any knob)             | unlit LEDs glow faintly **amber**                                       |
 | SPACE menu: amount knobs¹          | a **bar** in the knob's colour: LED 1 … LED 8 = 0 … 100 %               |
 | SPACE menu: EFFECTS with `banks`   | all LEDs dim white, the **selected bank** bright white (LED 1 = bank 1) |
-| SPACE menu: FREQ with `quantizer`  | the dot shows the scale; the ring **flashes white** when it changes     |
+| SPACE menu: FREQ with `quantizer`  | the dot; **step cue**² when the scale changes                           |
+| SPACE menu: SPACE! + `quantizer`   | the dot; **step cue**² when the root note changes                       |
+| ORBITS menu: CLUSTER               | the dot; **step cue**² when the chord changes (16 chords)               |
 | ORBITS menu: EFFECTS (string mode) | LEDs 1–4 = **bow**, LEDs 5–8 = **pluck**                                |
 | other knobs                        | the stock dot, on the menu tint                                         |
 
 ¹ FREQ, ORBITS, COLOR, SHAPE, EFFECTS and CLUSTER. SPACE! keeps the dot: its own amount is
 unused (with the quantizer it is the root note).
+² One LED (LED 5, the top of the ring) lights soft white for 150 ms; the rest of the ring keeps
+showing the dot.
 
 Build: `laniakea patcher build recommended banks quantizer led_menus`. Options:
 `tint` (menu tint brightness, default 6, 0 = off), `bright` (bars and bank LED, default 50,
-about as bright as the stock dot), `flash` (scale-change flash brightness, default 90, 0 = off),
-`flash_ms` (default 120). Example: `led_menus:tint=10,flash_ms=200`.
+about as bright as the stock dot), `flash` (step-cue brightness, default 30, 0 = off),
+`flash_ms` (default 150), `flash_led` (which LED, 1–8, default 5).
+Example: `led_menus:flash=20,flash_led=1`.
 
 ## Other patches
 
